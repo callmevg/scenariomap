@@ -89,16 +89,16 @@ export function TabBar({
 
   return (
     <>
-      <div className="flex items-center border-b bg-background px-2">
+      <div className="flex items-center border bg-background rounded-lg p-1">
         {graphIds.map((graphId) => (
           <div
             key={graphId}
             onClick={() => onSelectTab(graphId)}
             onDoubleClick={() => handleStartEditing(graphId, graphs[graphId].name)}
             className={cn(
-              'flex items-center h-10 px-3 border-r cursor-pointer group relative',
+              'flex items-center h-8 px-3 rounded-md cursor-pointer group relative',
               activeGraphId === graphId
-                ? 'bg-muted border-b-2 border-b-primary -mb-px'
+                ? 'bg-muted'
                 : 'hover:bg-muted/50'
             )}
           >

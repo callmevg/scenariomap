@@ -8,9 +8,10 @@ interface HeaderProps {
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
+  children?: React.ReactNode;
 }
 
-export function Header({ onExport, onImport, disabled }: HeaderProps) {
+export function Header({ onExport, onImport, disabled, children }: HeaderProps) {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -19,6 +20,9 @@ export function Header({ onExport, onImport, disabled }: HeaderProps) {
         <div className="mr-4 flex items-center">
           <Logo className="h-6 w-6 mr-2 text-primary" />
           <span className="font-bold text-lg">ScenarioMap</span>
+        </div>
+        <div className="flex-1 flex justify-center">
+          {children}
         </div>
         <div className="flex items-center space-x-2">
             <Button onClick={onExport} variant="outline" size="sm" disabled={disabled}>

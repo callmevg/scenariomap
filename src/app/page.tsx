@@ -371,15 +371,16 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header onExport={handleExportData} onImport={handleImportData} />
-      <TabBar
-        graphs={graphs}
-        activeGraphId={activeGraphId}
-        onSelectTab={handleSelectTab}
-        onAddGraph={handleAddNewGraph}
-        onDeleteGraph={handleDeleteGraph}
-        onRenameGraph={handleRenameGraph}
-      />
+      <Header onExport={handleExportData} onImport={handleImportData}>
+        <TabBar
+            graphs={graphs}
+            activeGraphId={activeGraphId}
+            onSelectTab={handleSelectTab}
+            onAddGraph={handleAddNewGraph}
+            onDeleteGraph={handleDeleteGraph}
+            onRenameGraph={handleRenameGraph}
+        />
+      </Header>
       <main className="flex flex-1 overflow-hidden">
         <Dashboard
           scenarios={scenarios}
