@@ -96,9 +96,9 @@ export function TabBar({
             onClick={() => onSelectTab(graphId)}
             onDoubleClick={() => handleStartEditing(graphId, graphs[graphId].name)}
             className={cn(
-              'flex items-center h-8 px-3 rounded-md cursor-pointer group relative',
+              'flex items-center h-8 px-3 rounded-md cursor-pointer group relative transition-colors',
               activeGraphId === graphId
-                ? 'bg-muted'
+                ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted/50'
             )}
           >
@@ -109,7 +109,7 @@ export function TabBar({
                 onChange={(e) => setEditingName(e.target.value)}
                 onBlur={handleFinishEditing}
                 onKeyDown={handleKeyDown}
-                className="h-6 w-32 px-1 text-sm"
+                className="h-6 w-32 px-1 text-sm bg-background text-foreground"
               />
             ) : (
               <span className="text-sm">{graphs[graphId].name}</span>
@@ -117,7 +117,7 @@ export function TabBar({
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 ml-2 opacity-0 group-hover:opacity-100"
+              className={cn("h-5 w-5 ml-2 opacity-0 group-hover:opacity-100", activeGraphId === graphId && "hover:bg-primary/80")}
               onClick={(e) => handleDeleteClick(e, graphId)}
             >
               <X className="h-3 w-3" />
