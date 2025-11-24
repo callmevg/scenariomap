@@ -4,20 +4,21 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import {
-  getElements,
-  getScenarios,
+  getGraphs,
+  saveGraphs,
   addElement,
   updateElement,
   addScenario,
   updateScenario,
-  signIn,
   addSampleData,
   exportData as exportDataFromLocalStorage,
   importData as importDataFromLocalStorage,
   deleteScenario,
   deleteElement,
+  deleteGraph,
+  renameGraph,
 } from '@/lib/localStorage';
-import type { UIElement, UIScenario } from '@/lib/types';
+import type { UIElement, UIScenario, GraphData } from '@/lib/types';
 import D3Graph from '@/components/d3-graph';
 import { Header } from '@/components/header';
 import { Dashboard } from '@/components/dashboard';
@@ -37,6 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { TabBar } from '@/components/tab-bar';
 
 
 type ModalState<T> = { open: boolean; data?: T | null; mode?: 'add' | 'edit' | 'view' };
@@ -44,8 +46,8 @@ type DeleteDialogState = { open: boolean; id?: string | null; type: 'scenario' |
 
 
 export default function Home() {
-  const [elements, setElements] = useState<UIElement[]>([]);
-  const [scenarios, setScenarios] = useState<UIScenario[]>([]);
+  const [graphs, setGraphs] = useState<Record<string, GraphData>>({});
+  const [activeGraphId, setActiveGraphId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hoveredScenarioId, setHoveredScenarioId] = useState<string | null>(null);
   const [hiddenScenarioIds, setHiddenScenarioIds] = useState<Set<string>>(new Set());
@@ -56,46 +58,33 @@ export default function Home() {
   const [scenarioModal, setScenarioModal] = useState<ModalState<UIScenario>>({ open: false, mode: 'add' });
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({ open: false, type: 'scenario' });
 
+  const loadData = useCallback(() => {
+    let currentGraphs = getGraphs();
+    if (Object.keys(currentGraphs).length === 0) {
+      currentGraphs = addSampleData();
+      toast({ title: "Welcome!", description: "We've added a sample graph to get you started." });
+    }
+    setGraphs(currentGraphs);
+    const firstGraphId = Object.keys(currentGraphs)[0];
+    setActiveGraphId(firstGraphId);
+    setLoading(false);
+  }, [toast]);
 
   useEffect(() => {
     let isMounted = true;
   
-    const loadData = () => {
-      if (typeof window === 'undefined') return;
-      
-      const currentElements = getElementsFromStorage();
-      const currentScenarios = getScenariosFromStorage();
-  
-      if (currentElements.length === 0 && currentScenarios.length === 0) {
-        addSampleData();
-        const initialElements = getElementsFromStorage();
-        const initialScenarios = getScenariosFromStorage();
-        if (isMounted) {
-            setElements(initialElements);
-            setScenarios(initialScenarios);
-            toast({ title: "Welcome!", description: "We've added some sample data to get you started." });
-        }
-      } else {
-        if (isMounted) {
-            setElements(currentElements);
-            setScenarios(currentScenarios);
-        }
-      }
-      if (isMounted) {
-        setLoading(false);
-      }
+    const loadInitialData = () => {
+      if (typeof window === 'undefined' || !isMounted) return;
+      loadData();
     };
-  
+
     // Defer the initial load to ensure it runs only on the client after hydration
-    requestAnimationFrame(loadData);
+    requestAnimationFrame(loadInitialData);
   
     const handleStorageChange = () => {
-      const currentElements = getElementsFromStorage();
-      const currentScenarios = getScenariosFromStorage();
-      if (isMounted) {
-        setElements(currentElements);
-        setScenarios(currentScenarios);
-      }
+       if (isMounted) {
+         setGraphs(getGraphs());
+       }
     };
   
     window.addEventListener('storage', handleStorageChange);
@@ -104,37 +93,27 @@ export default function Home() {
       isMounted = false;
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [toast]);
-  
-  // Helper to get scenarios synchronously for the initial check
-  const getScenariosFromStorage = (): UIScenario[] => {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem('flowverse-flows');
-    return data ? JSON.parse(data).map((scenario: any) => {
-      if (scenario.elementIds && !scenario.methods) {
-        return { ...scenario, methods: [scenario.elementIds], elementIds: undefined };
-      }
-      if (scenario.paths && !scenario.methods) {
-        return { ...scenario, methods: scenario.paths, paths: undefined };
-      }
-      return scenario;
-    }) : [];
-  };
-  
-  // Helper to get elements synchronously for the initial check
-  const getElementsFromStorage = (): UIElement[] => {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem('flowverse-elements');
-    return data ? JSON.parse(data) : [];
-  };
+  }, [loadData]);
+
+
+  const activeGraph = useMemo(() => {
+    if (!activeGraphId || !graphs[activeGraphId]) {
+      return { elements: [], scenarios: [] };
+    }
+    return graphs[activeGraphId];
+  }, [graphs, activeGraphId]);
+
+  const elements = activeGraph.elements;
+  const scenarios = activeGraph.scenarios;
 
   const handleNodeClick = useCallback((element: UIElement) => {
     setElementModal({ open: true, data: element, mode: 'view' });
   }, []);
 
   const handleExportData = () => {
-    exportDataFromLocalStorage(elements, scenarios);
-    toast({ title: "Success", description: "Data exported successfully." });
+    if (!activeGraphId) return;
+    exportDataFromLocalStorage(activeGraph);
+    toast({ title: "Success", description: "Active graph exported successfully." });
   };
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,9 +123,10 @@ export default function Home() {
       reader.onload = async (e) => {
         try {
           const json = e.target?.result as string;
-          await importDataFromLocalStorage(json);
-          toast({ title: "Success", description: "Data imported successfully. The graph will update." });
-
+          const newGraphId = await importDataFromLocalStorage(json);
+          setGraphs(getGraphs()); // Re-fetch all graphs
+          setActiveGraphId(newGraphId); // Switch to the newly imported graph
+          toast({ title: "Success", description: "Data imported as a new graph." });
         } catch (error: any) {
           toast({ variant: "destructive", title: "Import Error", description: error.message });
         }
@@ -161,11 +141,11 @@ export default function Home() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteDialog.id) return;
+    if (!deleteDialog.id || !activeGraphId) return;
 
     if (deleteDialog.type === 'scenario') {
       try {
-        await deleteScenario(deleteDialog.id);
+        await deleteScenario(activeGraphId, deleteDialog.id);
         toast({ title: "Success", description: "Scenario deleted." });
         setScenarioModal({ open: false });
       } catch (error: any) {
@@ -173,7 +153,7 @@ export default function Home() {
       }
     } else if (deleteDialog.type === 'element') {
       try {
-        await deleteElement(deleteDialog.id);
+        await deleteElement(activeGraphId, deleteDialog.id);
         toast({ title: "Success", description: "Element deleted." });
         setElementModal({ open: false });
       } catch (error: any) {
@@ -181,6 +161,7 @@ export default function Home() {
       }
     }
     setDeleteDialog({ open: false, type: 'scenario' });
+    setGraphs(getGraphs()); // Refresh graphs
   };
 
 
@@ -194,6 +175,7 @@ export default function Home() {
 
 
   const handleQuickAddElement = async (name: string) => {
+    if (!activeGraphId) return;
     const isNameTaken = elements.some(
       (element) => element.name.toLowerCase() === name.toLowerCase()
     );
@@ -208,14 +190,16 @@ export default function Home() {
     }
     
     try {
-      await addElement({ name, isBuggy: false, bugDetails: '', mediaLink: '' });
+      await addElement(activeGraphId, { name, isBuggy: false, bugDetails: '', mediaLink: '' });
       toast({ title: "Success", description: `Element "${name}" added.` });
+      setGraphs(getGraphs());
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     }
   };
 
   const handleBulkUpdate = async (type: 'elements' | 'scenarios', data: any[]) => {
+     if (!activeGraphId) return;
      if (type === 'elements') {
         const updates = data.map(item => {
             const existing = elements.find(e => e.id === item.id);
@@ -226,9 +210,9 @@ export default function Home() {
                 mediaLink: item.mediaLink || ''
             };
             if (existing) {
-                return updateElement(existing.id, payload);
+                return updateElement(activeGraphId, existing.id, payload);
             } else {
-                return addElement(payload);
+                return addElement(activeGraphId, payload);
             }
         });
         await Promise.all(updates);
@@ -256,14 +240,15 @@ export default function Home() {
             };
 
             if (existing) {
-                return updateScenario(existing.id, payload);
+                return updateScenario(activeGraphId, existing.id, payload);
             } else {
-                return addScenario(payload);
+                return addScenario(activeGraphId, payload);
             }
         });
         await Promise.all(updates);
         toast({ title: 'Success', description: 'Scenarios updated.' });
     }
+    setGraphs(getGraphs());
   };
 
   const visibleScenarios = useMemo(() => {
@@ -309,8 +294,44 @@ export default function Home() {
     });
   };
   
+  const handleAddNewGraph = () => {
+    const allGraphs = getGraphs();
+    const newGraphId = `graph-${Date.now()}`;
+    const newGraphName = `Untitled Graph ${Object.keys(allGraphs).length + 1}`;
+    allGraphs[newGraphId] = {
+      name: newGraphName,
+      elements: [],
+      scenarios: [],
+    };
+    saveGraphs(allGraphs);
+    setGraphs(allGraphs);
+    setActiveGraphId(newGraphId);
+    setHiddenScenarioIds(new Set()); // Reset visibility for new tab
+  };
+  
+  const handleDeleteGraph = (graphId: string) => {
+    deleteGraph(graphId);
+    const remainingGraphs = getGraphs();
+    setGraphs(remainingGraphs);
+    if (activeGraphId === graphId) {
+      const nextGraphId = Object.keys(remainingGraphs)[0] || null;
+      setActiveGraphId(nextGraphId);
+    }
+  };
+
+  const handleRenameGraph = (graphId: string, newName: string) => {
+    renameGraph(graphId, newName);
+    setGraphs(getGraphs());
+  };
+
+  const handleSelectTab = (graphId: string) => {
+    setActiveGraphId(graphId);
+    setHiddenScenarioIds(new Set()); // Reset visibility on tab change
+  };
+
+
   const renderContent = () => {
-    if (loading) {
+    if (loading || !activeGraphId) {
         return (
           <div className="flex items-center justify-center h-full">
              <Skeleton className="w-[80%] h-[80%] rounded-lg" />
@@ -351,6 +372,14 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen">
       <Header onExport={handleExportData} onImport={handleImportData} />
+      <TabBar
+        graphs={graphs}
+        activeGraphId={activeGraphId}
+        onSelectTab={handleSelectTab}
+        onAddGraph={handleAddNewGraph}
+        onDeleteGraph={handleDeleteGraph}
+        onRenameGraph={handleRenameGraph}
+      />
       <main className="flex flex-1 overflow-hidden">
         <Dashboard
           scenarios={scenarios}
@@ -362,13 +391,14 @@ export default function Home() {
           onScenarioHover={setHoveredScenarioId}
           onToggleScenario={toggleScenarioVisibility}
           onToggleGroup={toggleGroupVisibility}
+          disabled={!activeGraphId}
         />
         <div className="flex-1 relative bg-background/50">
           {renderContent()}
         </div>
       </main>
 
-      {elementModal.open && (
+      {elementModal.open && activeGraphId && (
         <ElementModal
           isOpen={elementModal.open}
           setIsOpen={(open) => setElementModal({ ...elementModal, open })}
@@ -376,6 +406,7 @@ export default function Home() {
           elements={elements}
           mode={elementModal.mode}
           onSave={async (data, id) => {
+            if (!activeGraphId) return;
             const isNameTaken = elements.some(
               (element) => element.name.toLowerCase() === data.name.toLowerCase() && element.id !== id
             );
@@ -391,13 +422,14 @@ export default function Home() {
 
             try {
               if (id) {
-                await updateElement(id, data);
+                await updateElement(activeGraphId, id, data);
                 toast({ title: "Success", description: "Element updated." });
               } else {
-                await addElement(data as Omit<UIElement, 'id' | 'createdAt'>);
+                await addElement(activeGraphId, data as Omit<UIElement, 'id' | 'createdAt'>);
                 toast({ title: "Success", description: "Element added." });
               }
               setElementModal({ open: false });
+              setGraphs(getGraphs());
             } catch (error: any) {
               toast({ variant: "destructive", title: "Error", description: error.message });
             }
@@ -406,7 +438,7 @@ export default function Home() {
         />
       )}
 
-      {scenarioModal.open && (
+      {scenarioModal.open && activeGraphId && (
         <ScenarioModal
           isOpen={scenarioModal.open}
           setIsOpen={(open) => setScenarioModal({ ...scenarioModal, open })}
@@ -414,6 +446,7 @@ export default function Home() {
           elements={elements}
           scenarios={scenarios}
           onSave={async (data, id) => {
+            if (!activeGraphId) return;
             const isNameTaken = scenarios.some(
                 (scenario) => scenario.name.toLowerCase() === data.name.toLowerCase() && scenario.id !== id
             );
@@ -428,13 +461,14 @@ export default function Home() {
             }
             try {
               if (id) {
-                await updateScenario(id, data);
+                await updateScenario(activeGraphId, id, data);
                 toast({ title: "Success", description: "Scenario updated." });
               } else {
-                await addScenario(data);
+                await addScenario(activeGraphId, data);
                 toast({ title: "Success", description: "Scenario added." });
               }
               setScenarioModal({ open: false });
+              setGraphs(getGraphs());
             } catch (error: any) {
               toast({ variant: "destructive", title: "Error", description: error.message });
             }

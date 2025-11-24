@@ -1,4 +1,3 @@
-import { Timestamp } from "firebase/firestore";
 
 export interface UIElement {
   id: string;
@@ -6,7 +5,7 @@ export interface UIElement {
   isBuggy: boolean;
   bugDetails: string;
   mediaLink: string;
-  createdAt: Timestamp;
+  createdAt: string; // Changed from Timestamp
   x?: number; // For D3 simulation
   y?: number; // For D3 simulation
   fx?: number | null; // For D3 fixed position
@@ -18,4 +17,10 @@ export interface UIScenario {
   name: string;
   methods: string[][];
   group?: string;
+}
+
+export interface GraphData {
+  name: string;
+  elements: UIElement[];
+  scenarios: UIScenario[];
 }

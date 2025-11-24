@@ -1,27 +1,34 @@
 
 "use client";
 
-import type { UIElement, UIScenario } from './types';
-import { Timestamp } from "firebase/firestore"; // Still needed for type consistency until fully removed.
+import type { UIElement, UIScenario, GraphData } from './types';
+
+const STORAGE_KEY = 'scenario-map-data';
 
 // --- Helper Functions ---
+export const getGraphs = (): Record<string, GraphData> => {
+  if (typeof window === 'undefined') return {};
+  const data = localStorage.getItem(STORAGE_KEY);
+  return data ? JSON.parse(data) : {};
+};
 
+export const saveGraphs = (graphs: Record<string, GraphData>) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(graphs));
+  window.dispatchEvent(new Event('storage'));
+};
+
+
+// These are now legacy and should be used for migration/sample data only.
 const getElementsFromStorage = (): UIElement[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem('flowverse-elements');
   return data ? JSON.parse(data) : [];
 };
 
-const saveElementsToStorage = (elements: UIElement[]) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('flowverse-elements', JSON.stringify(elements));
-  window.dispatchEvent(new Event('storage'));
-};
-
 const getScenariosFromStorage = (): UIScenario[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem('flowverse-flows'); // Use 'flows' for backward compatibility
-  // Backwards compatibility for old data structure
   const scenarios = data ? JSON.parse(data) : [];
   return scenarios.map((scenario: any) => {
     if (scenario.elementIds && !scenario.methods) {
@@ -34,143 +41,155 @@ const getScenariosFromStorage = (): UIScenario[] => {
   });
 };
 
-const saveScenariosToStorage = (scenarios: UIScenario[]) => {
-    if (typeof window === 'undefined') return;
-  localStorage.setItem('flowverse-flows', JSON.stringify(scenarios)); // Use 'flows' for backward compatibility
-  window.dispatchEvent(new Event('storage'));
+
+// --- New Multi-Graph API ---
+
+export const getElements = (graphId: string, callback: (elements: UIElement[]) => void) => {
+    const graphs = getGraphs();
+    const elements = graphs[graphId]?.elements || [];
+    callback(elements);
+    // Note: This doesn't auto-update on storage change for a specific graph's elements,
+    // the main component handles re-fetching.
 };
 
-// --- Mock Firestore-like API ---
-
-// We don't need sign-in for local storage
-export const signIn = async () => {
-  return Promise.resolve();
+export const getScenarios = (graphId: string, callback: (scenarios: UIScenario[]) => void) => {
+    const graphs = getGraphs();
+    const scenarios = graphs[graphId]?.scenarios || [];
+    callback(scenarios);
 };
 
-export const getElements = (callback: (elements: UIElement[]) => void) => {
-    if (typeof window === 'undefined') {
-        callback([]);
-        return () => {};
-    }
 
-    const handleStorageChange = () => {
-        callback(getElementsFromStorage());
-    };
+export const addElement = (graphId: string, elementData: Omit<UIElement, 'id' | 'createdAt'>) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
 
-    window.addEventListener('storage', handleStorageChange);
-    callback(getElementsFromStorage()); // Initial call
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-};
-
-export const getScenarios = (callback: (scenarios: UIScenario[]) => void) => {
-    if (typeof window === 'undefined') {
-        callback([]);
-        return () => {};
-    }
-    const handleStorageChange = () => {
-        callback(getScenariosFromStorage());
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    callback(getScenariosFromStorage()); // Initial call
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-};
-
-export const addElement = (elementData: Omit<UIElement, 'id' | 'createdAt'>) => {
-  const elements = getElementsFromStorage();
   const newElement: UIElement = {
     ...elementData,
     id: new Date().getTime().toString(), // Simple unique ID
-    // @ts-ignore
-    createdAt: { toDate: () => new Date() } // Mock Timestamp for type consistency
+    createdAt: new Date().toISOString()
   };
-  saveElementsToStorage([...elements, newElement]);
+
+  graphs[graphId].elements.push(newElement);
+  saveGraphs(graphs);
   return Promise.resolve();
 };
 
-export const updateElement = (id: string, elementData: Partial<Omit<UIElement, 'id'>>) => {
-  const elements = getElementsFromStorage();
+
+export const updateElement = (graphId: string, id: string, elementData: Partial<Omit<UIElement, 'id'>>) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
+  
+  const elements = graphs[graphId].elements;
   const updatedElements = elements.map(el => el.id === id ? { ...el, ...elementData } : el);
-  saveElementsToStorage(updatedElements);
+  graphs[graphId].elements = updatedElements;
+
+  saveGraphs(graphs);
   return Promise.resolve();
 };
 
-export const deleteElement = (id: string) => {
-  const elements = getElementsFromStorage();
-  const updatedElements = elements.filter(el => el.id !== id);
-  saveElementsToStorage(updatedElements);
+export const deleteElement = (graphId: string, id: string) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
 
-  // Also remove this element from any scenarios that use it
-  const scenarios = getScenariosFromStorage();
-  const updatedScenarios = scenarios.map(scenario => ({
+  // Remove element
+  graphs[graphId].elements = graphs[graphId].elements.filter(el => el.id !== id);
+
+  // Remove from scenarios
+  graphs[graphId].scenarios = graphs[graphId].scenarios.map(scenario => ({
     ...scenario,
     methods: scenario.methods.map(method => method.filter(elId => elId !== id)).filter(method => method.length > 0)
-  })).filter(scenario => scenario.methods.length > 0); // Optional: remove scenarios that become empty
-  saveScenariosToStorage(updatedScenarios);
+  })).filter(scenario => scenario.methods.length > 0);
   
+  saveGraphs(graphs);
   return Promise.resolve();
 };
 
-export const addScenario = (scenarioData: Omit<UIScenario, 'id'>) => {
-  const scenarios = getScenariosFromStorage();
+export const addScenario = (graphId: string, scenarioData: Omit<UIScenario, 'id'>) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
+
   const newScenario: UIScenario = {
     ...scenarioData,
     id: new Date().getTime().toString(),
   };
-  saveScenariosToStorage([...scenarios, newScenario]);
-  return Promise.resolve();
+
+  graphs[graphId].scenarios.push(newScenario);
+  saveGraphs(graphs);
+return Promise.resolve();
 };
 
-export const updateScenario = (id: string, scenarioData: Partial<Omit<UIScenario, 'id'>>) => {
-  const scenarios = getScenariosFromStorage();
+export const updateScenario = (graphId: string, id: string, scenarioData: Partial<Omit<UIScenario, 'id'>>) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
+
+  const scenarios = graphs[graphId].scenarios;
   const updatedScenarios = scenarios.map(f => f.id === id ? { ...f, ...scenarioData } : f);
-  saveScenariosToStorage(updatedScenarios);
+  graphs[graphId].scenarios = updatedScenarios;
+
+  saveGraphs(graphs);
   return Promise.resolve();
 };
 
-export const deleteScenario = (id: string) => {
-  const scenarios = getScenariosFromStorage();
-  const updatedScenarios = scenarios.filter(f => f.id !== id);
-  saveScenariosToStorage(updatedScenarios);
+export const deleteScenario = (graphId: string, id: string) => {
+  const graphs = getGraphs();
+  if (!graphs[graphId]) return Promise.reject("Graph not found");
+  
+  graphs[graphId].scenarios = graphs[graphId].scenarios.filter(f => f.id !== id);
+  saveGraphs(graphs);
+
   return Promise.resolve();
 };
 
-export const exportData = (elements: UIElement[], scenarios: UIScenario[]) => {
-    const serializableElements = elements.map(({ x, y, fx, fy, ...el }) => {
+export const deleteGraph = (graphId: string) => {
+  const graphs = getGraphs();
+  if (Object.keys(graphs).length <= 1) {
+    alert("You cannot delete the last graph.");
+    return;
+  }
+  delete graphs[graphId];
+  saveGraphs(graphs);
+};
+
+export const renameGraph = (graphId: string, newName: string) => {
+    const graphs = getGraphs();
+    if(graphs[graphId]) {
+        graphs[graphId].name = newName;
+        saveGraphs(graphs);
+    }
+};
+
+
+// --- Data Portability ---
+
+export const exportData = (graphData: GraphData) => {
+    const serializableElements = graphData.elements.map(({ x, y, fx, fy, ...el }) => {
         const { createdAt, ...rest } = el;
-        // @ts-ignore
-        const serializableCreatedAt = createdAt?.toDate ? createdAt.toDate().toISOString() : new Date().toISOString();
+        const serializableCreatedAt = createdAt || new Date().toISOString();
         return { ...rest, createdAt: serializableCreatedAt };
     });
 
     const data = {
+        name: graphData.name, // Include graph name in export
         elements: serializableElements,
-        flows: scenarios, // Use 'flows' on export for backward compatibility
+        scenarios: graphData.scenarios,
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'scenarioverse-data.json';
+    a.download = `${graphData.name.replace(/\s+/g, '_')}-scenariomap.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
 
-export const importData = async (jsonData: string) => {
-    const { elements, scenarios, flows } = JSON.parse(jsonData);
+export const importData = async (jsonData: string): Promise<string> => {
+    const { name, elements, scenarios, flows } = JSON.parse(jsonData);
 
     const importedElements = elements || [];
     const importedScenarios = scenarios || flows || [];
-
 
     if (!Array.isArray(importedElements) || !Array.isArray(importedScenarios)) {
         throw new Error("Invalid JSON format");
@@ -179,19 +198,17 @@ export const importData = async (jsonData: string) => {
     const idMap: { [key: string]: string } = {};
     const newElements: UIElement[] = importedElements.map((el: any) => {
         const oldId = el.id;
-        const newId = new Date().getTime().toString() + Math.random();
+        const newId = `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         idMap[oldId] = newId;
         return { 
             ...el, 
             id: newId,
-            // @ts-ignore
-            createdAt: { toDate: () => new Date(el.createdAt) }
+            createdAt: el.createdAt || new Date().toISOString()
         };
     });
 
     const newScenarios: UIScenario[] = importedScenarios.map((scenario: any) => {
         let methods: string[][];
-        // Handle all possible legacy formats ('elementIds', 'paths') and the current format ('methods')
         const sourceMethods = scenario.methods || scenario.paths || (scenario.elementIds ? [scenario.elementIds] : []);
         
         methods = (sourceMethods || []).map((method: string[]) => 
@@ -200,81 +217,71 @@ export const importData = async (jsonData: string) => {
 
         return {
             ...scenario,
-            id: new Date().getTime().toString() + Math.random(),
+            id: `sc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             methods: methods.filter(method => method.length > 0),
         }
     }).filter((scenario: UIScenario) => scenario.methods.length > 0);
 
-    // Save with the correct keys for backward compatibility
-    saveElementsToStorage(newElements);
-    saveScenariosToStorage(newScenarios);
-
-
-    return Promise.resolve();
+    const graphs = getGraphs();
+    const newGraphId = `graph-${Date.now()}`;
+    const newGraphName = name || `Imported Graph ${Object.keys(graphs).length + 1}`;
+    
+    graphs[newGraphId] = {
+        name: newGraphName,
+        elements: newElements,
+        scenarios: newScenarios,
+    };
+    
+    saveGraphs(graphs);
+    return Promise.resolve(newGraphId);
 };
 
 
-export const addSampleData = () => {
-    const elements = getElementsFromStorage();
-    const scenarios = getScenariosFromStorage();
+export const addSampleData = (): Record<string, GraphData> => {
+    // Check if there's legacy data to migrate
+    const legacyElements = getElementsFromStorage();
+    const legacyScenarios = getScenariosFromStorage();
 
-    if (elements.length > 0 || scenarios.length > 0) return;
-
-    const loginEl: UIElement = {
-        id: '1',
-        name: 'Login Dialog',
-        isBuggy: false,
-        bugDetails: '',
-        mediaLink: '',
-        // @ts-ignore
-        createdAt: { toDate: () => new Date() }
-    };
-    const dashboardEl: UIElement = {
-        id: '2',
-        name: 'Dashboard',
-        isBuggy: true,
-        bugDetails: 'Metrics not loading correctly.',
-        mediaLink: 'bug-placeholder',
-        // @ts-ignore
-        createdAt: { toDate: () => new Date() }
-    };
-    const settingsEl: UIElement = {
-        id: '3',
-        name: 'Settings Page',
-        isBuggy: false,
-        bugDetails: '',
-        mediaLink: '',
-        // @ts-ignore
-        createdAt: { toDate: () => new Date() }
-    };
-    const profileEl: UIElement = {
-        id: '4',
-        name: 'User Profile',
-        isBuggy: false,
-        bugDetails: '',
-        mediaLink: '',
-        // @ts-ignore
-        createdAt: { toDate: () => new Date() }
-    };
-     const forgotPasswordEl: UIElement = {
-        id: '5',
-        name: 'Forgot Password',
-        isBuggy: false,
-        bugDetails: '',
-        mediaLink: '',
-        // @ts-ignore
-        createdAt: { toDate: () => new Date() }
-    };
-
+    if (legacyElements.length > 0 || legacyScenarios.length > 0) {
+        const migratedGraph: GraphData = {
+            name: "My First Graph",
+            elements: legacyElements.map(el => ({...el, createdAt: el.createdAt || new Date().toISOString()})),
+            scenarios: legacyScenarios,
+        };
+        const graphs = { 'graph-1': migratedGraph };
+        saveGraphs(graphs);
+        localStorage.removeItem('flowverse-elements');
+        localStorage.removeItem('flowverse-flows');
+        return graphs;
+    }
+    
+    // If no legacy data, create fresh sample data
+    const loginEl: UIElement = { id: '1', name: 'Login Dialog', isBuggy: false, bugDetails: '', mediaLink: '', createdAt: new Date().toISOString() };
+    const dashboardEl: UIElement = { id: '2', name: 'Dashboard', isBuggy: true, bugDetails: 'Metrics not loading correctly.', mediaLink: 'bug-placeholder', createdAt: new Date().toISOString() };
+    const settingsEl: UIElement = { id: '3', name: 'Settings Page', isBuggy: false, bugDetails: '', mediaLink: '', createdAt: new Date().toISOString() };
+    const profileEl: UIElement = { id: '4', name: 'User Profile', isBuggy: false, bugDetails: '', mediaLink: '', createdAt: new Date().toISOString() };
+    const forgotPasswordEl: UIElement = { id: '5', name: 'Forgot Password', isBuggy: false, bugDetails: '', mediaLink: '', createdAt: new Date().toISOString() };
 
     const sampleElements = [loginEl, dashboardEl, settingsEl, profileEl, forgotPasswordEl];
-
     const sampleScenarios: UIScenario[] = [
         { id: '101', name: 'User Login', methods: [[loginEl.id, dashboardEl.id], [forgotPasswordEl.id, loginEl.id]], group: "Onboarding" },
         { id: '102', name: 'Profile Update', methods: [[dashboardEl.id, settingsEl.id, profileEl.id]], group: "User Management" },
         { id: '103', name: 'View Settings', methods: [[dashboardEl.id, settingsEl.id]], group: "User Management" },
     ];
     
-    saveElementsToStorage(sampleElements);
-    saveScenariosToStorage(sampleScenarios);
+    const sampleGraph: GraphData = {
+        name: "Sample Graph",
+        elements: sampleElements,
+        scenarios: sampleScenarios,
+    };
+    
+    const graphs = { 'sample-graph-1': sampleGraph };
+    saveGraphs(graphs);
+    return graphs;
+};
+
+
+// We don't need sign-in for local storage
+export const signIn = async () => {
+  return Promise.resolve();
 };

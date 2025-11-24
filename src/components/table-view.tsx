@@ -98,8 +98,7 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
             isBuggy: false,
             bugDetails: '',
             mediaLink: '',
-            // @ts-ignore
-            createdAt: { toDate: () => new Date() }
+            createdAt: new Date().toISOString()
         };
         setEditableElements(prev => [...prev, newElement]);
     };
