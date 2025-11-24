@@ -186,7 +186,7 @@ export const exportData = (graphData: GraphData) => {
 };
 
 export const importData = async (jsonData: string, activeGraphId: string): Promise<void> => {
-    const { elements, scenarios, flows } = JSON.parse(jsonData);
+    const importedData = JSON.parse(jsonData);
     const graphs = getGraphs();
     const activeGraph = graphs[activeGraphId];
 
@@ -194,23 +194,39 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
         throw new Error("Active graph not found to merge into.");
     }
     
-    const importedElements = elements || [];
-    const importedScenarios = scenarios || flows || [];
+    const importedElements = importedData.elements || [];
+    const importedScenarios = importedData.scenarios || importedData.flows || [];
 
     if (!Array.isArray(importedElements) || !Array.isArray(importedScenarios)) {
         throw new Error("Invalid JSON format");
     }
 
     const idMap: { [key: string]: string } = {};
-    const newElements: UIElement[] = importedElements.map((el: any) => {
+    const newElements: UIElement[] = [];
+
+    // Create a map of existing element names to their IDs for quick lookup
+    const existingElementNames = new Map(activeGraph.elements.map(el => [el.name.toLowerCase(), el.id]));
+
+    importedElements.forEach((el: any) => {
         const oldId = el.id;
-        const newId = `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        idMap[oldId] = newId;
-        return { 
-            ...el, 
-            id: newId,
-            createdAt: el.createdAt || new Date().toISOString()
-        };
+        const elementNameLower = el.name.toLowerCase();
+        
+        // Check if an element with the same name already exists
+        if (existingElementNames.has(elementNameLower)) {
+            // If it exists, map the old ID to the existing ID
+            idMap[oldId] = existingElementNames.get(elementNameLower)!;
+        } else {
+            // If it doesn't exist, create a new element with a new ID
+            const newId = `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            idMap[oldId] = newId;
+            newElements.push({ 
+                ...el, 
+                id: newId,
+                createdAt: el.createdAt || new Date().toISOString()
+            });
+            // Add the new element to the map to handle duplicates within the imported file itself
+            existingElementNames.set(elementNameLower, newId);
+        }
     });
 
     const newScenarios: UIScenario[] = importedScenarios.map((scenario: any) => {
@@ -223,6 +239,7 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
 
         return {
             ...scenario,
+            name: scenario.name, // Ensure new scenarios can have same name
             id: `sc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             methods: methods.filter(method => method.length > 0),
         }
@@ -237,6 +254,7 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
     saveGraphs(graphs);
     return Promise.resolve();
 };
+
 
 
 export const addSampleData = (): Record<string, GraphData> => {
@@ -287,3 +305,4 @@ export const addSampleData = (): Record<string, GraphData> => {
 export const signIn = async () => {
   return Promise.resolve();
 };
+
