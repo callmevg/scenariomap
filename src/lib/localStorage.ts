@@ -65,7 +65,7 @@ export const addElement = (graphId: string, elementData: Omit<UIElement, 'id' | 
 
   const newElement: UIElement = {
     ...elementData,
-    id: new Date().getTime().toString(), // Simple unique ID
+    id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     createdAt: new Date().toISOString()
   };
 
@@ -110,7 +110,7 @@ export const addScenario = (graphId: string, scenarioData: Omit<UIScenario, 'id'
 
   const newScenario: UIScenario = {
     ...scenarioData,
-    id: new Date().getTime().toString(),
+    id: `sc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   };
 
   graphs[graphId].scenarios.push(newScenario);
@@ -185,9 +185,15 @@ export const exportData = (graphData: GraphData) => {
     URL.revokeObjectURL(url);
 };
 
-export const importData = async (jsonData: string): Promise<string> => {
-    const { name, elements, scenarios, flows } = JSON.parse(jsonData);
+export const importData = async (jsonData: string, activeGraphId: string): Promise<void> => {
+    const { elements, scenarios, flows } = JSON.parse(jsonData);
+    const graphs = getGraphs();
+    const activeGraph = graphs[activeGraphId];
 
+    if (!activeGraph) {
+        throw new Error("Active graph not found to merge into.");
+    }
+    
     const importedElements = elements || [];
     const importedScenarios = scenarios || flows || [];
 
@@ -222,18 +228,14 @@ export const importData = async (jsonData: string): Promise<string> => {
         }
     }).filter((scenario: UIScenario) => scenario.methods.length > 0);
 
-    const graphs = getGraphs();
-    const newGraphId = `graph-${Date.now()}`;
-    const newGraphName = name || `Imported Graph ${Object.keys(graphs).length + 1}`;
-    
-    graphs[newGraphId] = {
-        name: newGraphName,
-        elements: newElements,
-        scenarios: newScenarios,
-    };
+    // Merge new elements and scenarios into the active graph
+    activeGraph.elements.push(...newElements);
+    activeGraph.scenarios.push(...newScenarios);
+
+    graphs[activeGraphId] = activeGraph;
     
     saveGraphs(graphs);
-    return Promise.resolve(newGraphId);
+    return Promise.resolve();
 };
 
 

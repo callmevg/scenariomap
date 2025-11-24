@@ -118,21 +118,22 @@ export default function Home() {
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && activeGraphId) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const json = e.target?.result as string;
-          const newGraphId = await importDataFromLocalStorage(json);
-          setGraphs(getGraphs()); // Re-fetch all graphs
-          setActiveGraphId(newGraphId); // Switch to the newly imported graph
-          toast({ title: "Success", description: "Data imported as a new graph." });
+          await importDataFromLocalStorage(json, activeGraphId);
+          setGraphs(getGraphs()); // Re-fetch all graphs to reflect the merge
+          toast({ title: "Success", description: "Data merged into the current graph." });
         } catch (error: any) {
           toast({ variant: "destructive", title: "Import Error", description: error.message });
         }
       };
       reader.readAsText(file);
       event.target.value = ''; // Reset file input
+    } else if (!activeGraphId) {
+        toast({ variant: "destructive", title: "Import Error", description: "No active graph to import into." });
     }
   };
 
