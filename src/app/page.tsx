@@ -47,9 +47,9 @@ type DeleteDialogState = { open: boolean; id?: string | null; type: 'scenario' |
 
 
 export default function Home() {
+  const [hasMounted, setHasMounted] = useState(false);
   const [graphs, setGraphs] = useState<Record<string, GraphData>>({});
   const [activeGraphId, setActiveGraphId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [hoveredScenarioId, setHoveredScenarioId] = useState<string | null>(null);
   const [hiddenScenarioIds, setHiddenScenarioIds] = useState<Set<string>>(new Set());
 
@@ -58,6 +58,10 @@ export default function Home() {
   const [elementModal, setElementModal] = useState<ModalState<UIElement>>({ open: false, mode: 'add' });
   const [scenarioModal, setScenarioModal] = useState<ModalState<UIScenario>>({ open: false, mode: 'add' });
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({ open: false, type: 'scenario' });
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const loadData = useCallback(() => {
     let currentGraphs = getGraphs();
@@ -68,23 +72,23 @@ export default function Home() {
     setGraphs(currentGraphs);
     const firstGraphId = Object.keys(currentGraphs)[0];
     setActiveGraphId(firstGraphId);
-    setLoading(false);
   }, [toast]);
 
   useEffect(() => {
-    // This effect runs only on the client, after initial render
-    loadData();
+    if (hasMounted) {
+      loadData();
 
-    const handleStorageChange = () => {
-      setGraphs(getGraphs());
-    };
+      const handleStorageChange = () => {
+        setGraphs(getGraphs());
+      };
 
-    window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('storage', handleStorageChange);
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [loadData]);
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }
+  }, [hasMounted, loadData]);
 
 
   const activeGraph = useMemo(() => {
@@ -323,7 +327,7 @@ export default function Home() {
 
 
   const renderContent = () => {
-    if (loading || !activeGraphId) {
+    if (!hasMounted || !activeGraphId) {
         return (
           <div className="flex items-center justify-center h-full">
              <Skeleton className="w-[80%] h-[80%] rounded-lg" />
@@ -373,28 +377,32 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen">
       <Header onExport={handleExportData} onImport={handleImportData}>
-        <TabBar
-            graphs={graphs}
-            activeGraphId={activeGraphId}
-            onSelectTab={handleSelectTab}
-            onAddGraph={handleAddNewGraph}
-            onDeleteGraph={handleDeleteGraph}
-            onRenameGraph={handleRenameGraph}
-        />
+        {hasMounted && (
+            <TabBar
+                graphs={graphs}
+                activeGraphId={activeGraphId}
+                onSelectTab={handleSelectTab}
+                onAddGraph={handleAddNewGraph}
+                onDeleteGraph={handleDeleteGraph}
+                onRenameGraph={handleRenameGraph}
+            />
+        )}
       </Header>
       <main className="flex flex-1 overflow-hidden">
-        <Dashboard
-          scenarios={scenarios}
-          scenarioColors={scenarioColors}
-          hiddenScenarioIds={hiddenScenarioIds}
-          onAddScenario={() => setScenarioModal({ open: true, data: null, mode: 'add' })}
-          onEditScenario={handleEditScenario}
-          onAddElement={() => setElementModal({ open: true, data: null, mode: 'add' })}
-          onScenarioHover={setHoveredScenarioId}
-          onToggleScenario={toggleScenarioVisibility}
-          onToggleGroup={toggleGroupVisibility}
-          disabled={!activeGraphId}
-        />
+        {hasMounted && (
+            <Dashboard
+              scenarios={scenarios}
+              scenarioColors={scenarioColors}
+              hiddenScenarioIds={hiddenScenarioIds}
+              onAddScenario={() => setScenarioModal({ open: true, data: null, mode: 'add' })}
+              onEditScenario={handleEditScenario}
+              onAddElement={() => setElementModal({ open: true, data: null, mode: 'add' })}
+              onScenarioHover={setHoveredScenarioId}
+              onToggleScenario={toggleScenarioVisibility}
+              onToggleGroup={toggleGroupVisibility}
+              disabled={!activeGraphId}
+            />
+        )}
         <div className="flex-1 relative bg-background/50">
           {renderContent()}
         </div>
@@ -499,5 +507,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
