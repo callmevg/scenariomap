@@ -12,9 +12,12 @@ interface MetroMapProps {
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
 }
 
-const GRID_SIZE = 100;
+const GRID_SIZE = 120;
 const NODE_RADIUS = 8;
 const LINE_WIDTH = 6;
+
+// Helper function to create a key for a grid position
+const posKey = (x: number, y: number) => `${x},${y}`;
 
 const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -22,51 +25,117 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   const layout = useMemo(() => {
     if (elements.length === 0) return { nodes: [], links: [] };
 
-    const nodes: any[] = elements.map(el => ({ ...el }));
-    const grid: { [key: string]: string } = {};
-    const positions: { [key: string]: { x: number, y: number } } = {};
-    
-    const placeNode = (node: any, x: number, y: number) => {
-        const key = `${x},${y}`;
-        if (!grid[key]) {
-            grid[key] = node.id;
-            positions[node.id] = { x: x * GRID_SIZE, y: y * GRID_SIZE };
+    const elementMap = new Map(elements.map(el => [el.id, { ...el }]));
+    const grid: { [key: string]: string } = {}; // Stores elementId at a grid position
+    const positions: { [key: string]: { x: number, y: number } } = {}; // Stores grid coordinates for an elementId
+
+    // Function to check if a grid cell is occupied
+    const isOccupied = (x: number, y: number) => !!grid[posKey(x, y)];
+
+    // Function to place a node on the grid
+    const placeNode = (nodeId: string, x: number, y: number) => {
+        if (!isOccupied(x, y)) {
+            grid[posKey(x, y)] = nodeId;
+            positions[nodeId] = { x, y };
             return true;
         }
         return false;
     };
     
-    // Simple greedy placement algorithm
-    let x = 0, y = 0, dx = 1;
-    nodes.forEach(node => {
-        let placed = false;
-        while (!placed) {
-            if (placeNode(node, x, y)) {
-                placed = true;
-            } else {
-                // Spiral outwards to find a free spot
-                x += dx;
-                if (x > y && x > 0) { dx = -1; }
-                else if (x < -y) { dx = 1; }
-                else if (dx === -1) { y--; }
-                else if (dx === 1) { y++; }
-            }
-        }
-    });
+    // --- New Layout Algorithm ---
 
-    const laidOutNodes = nodes.map(node => ({
+    // 1. Find the longest scenario to use as the backbone
+    const longestScenario = [...scenarios].sort((a, b) => {
+        const lengthA = a.methods.reduce((sum, p) => sum + p.length, 0);
+        const lengthB = b.methods.reduce((sum, p) => sum + p.length, 0);
+        return lengthB - lengthA;
+    })[0];
+
+    const placedNodes = new Set<string>();
+
+    // 2. Place the longest scenario horizontally
+    if (longestScenario) {
+        const mainPath = longestScenario.methods.flat();
+        mainPath.forEach((nodeId, i) => {
+            if (!placedNodes.has(nodeId)) {
+                placeNode(nodeId, i, 0);
+                placedNodes.add(nodeId);
+            }
+        });
+    }
+
+    // 3. Place remaining nodes using a breadth-first approach
+    const queue: string[] = [...placedNodes];
+    const visited = new Set<string>(placedNodes);
+
+    while(queue.length > 0) {
+        const nodeId = queue.shift()!;
+        if (!positions[nodeId]) continue;
+
+        const {x, y} = positions[nodeId];
+
+        // Find neighbors of this node from all scenarios
+        const neighbors = new Set<string>();
+        scenarios.forEach(scenario => {
+            scenario.methods.forEach(method => {
+                const index = method.indexOf(nodeId);
+                if (index > 0) neighbors.add(method[index - 1]);
+                if (index !== -1 && index < method.length - 1) neighbors.add(method[index + 1]);
+            });
+        });
+
+        neighbors.forEach(neighborId => {
+            if (!visited.has(neighborId)) {
+                visited.add(neighborId);
+                let placed = false;
+                // Try to place neighbors in adjacent cells (von Neumann neighborhood)
+                const directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const [dx, dy] of directions) {
+                    if (placeNode(neighborId, x + dx, y + dy)) {
+                        placed = true;
+                        break;
+                    }
+                }
+                // If all adjacent are occupied, spiral out (simple version)
+                if (!placed) {
+                    let radius = 2;
+                    while(!placed) {
+                        for(let i = -radius; i <= radius; i++) {
+                            for(let j = -radius; j <= radius; j++) {
+                                if (i === -radius || i === radius || j === -radius || j === radius) {
+                                    if(placeNode(neighborId, x+i, y+j)) {
+                                        placed = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if(placed) break;
+                        }
+                        radius++;
+                    }
+                }
+                if(placed) queue.push(neighborId);
+            }
+        });
+    }
+
+    // Convert grid coordinates to pixel coordinates
+    const laidOutNodes = elements
+      .filter(el => positions[el.id]) // Only include nodes that were placed
+      .map(node => ({
         ...node,
-        ...positions[node.id],
+        x: positions[node.id].x * GRID_SIZE,
+        y: positions[node.id].y * GRID_SIZE,
     }));
+
+    const nodeMap = new Map(laidOutNodes.map(n => [n.id, n]));
 
     const links: any[] = [];
     scenarios.forEach(scenario => {
       scenario.methods.forEach(method => {
         for (let i = 0; i < method.length - 1; i++) {
-          const sourceId = method[i];
-          const targetId = method[i+1];
-          const sourceNode = laidOutNodes.find(n => n.id === sourceId);
-          const targetNode = laidOutNodes.find(n => n.id === targetId);
+          const sourceNode = nodeMap.get(method[i]);
+          const targetNode = nodeMap.get(method[i+1]);
           if (sourceNode && targetNode) {
             links.push({
               source: sourceNode,
@@ -93,6 +162,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     const height = bounds.height;
     
     svg.selectAll('*').remove();
+    
+    if (nodes.length === 0) return;
 
     const container = svg.append('g');
     
@@ -111,8 +182,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     const translateY = height / 2 - ((d3.min(nodes, d => d.y) || 0) + dataHeight / 2) * scale;
     
     const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
-    svg.call(zoom.transform, initialTransform);
     svg.call(zoom);
+    svg.call(zoom.transform, initialTransform);
 
 
     // --- Draw Links ---
@@ -126,7 +197,11 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             const dy = target.y - source.y;
             
             // Simple elbow connector
-            return `M${source.x},${source.y} L${source.x},${target.y} L${target.x},${target.y}`;
+            if (Math.abs(dx) > Math.abs(dy)) {
+              return `M${source.x},${source.y} L${source.x + dx/2},${source.y} L${source.x + dx/2},${target.y} L${target.x},${target.y}`;
+            } else {
+              return `M${source.x},${source.y} L${source.x},${source.y + dy/2} L${target.x},${source.y + dy/2} L${target.x},${target.y}`;
+            }
         })
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
         .attr('stroke-width', LINE_WIDTH)
@@ -167,5 +242,3 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
-
-    
