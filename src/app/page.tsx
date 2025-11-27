@@ -72,26 +72,16 @@ export default function Home() {
   }, [toast]);
 
   useEffect(() => {
-    let isMounted = true;
-  
-    const loadInitialData = () => {
-      if (typeof window === 'undefined' || !isMounted) return;
-      loadData();
+    // This effect runs only on the client, after initial render
+    loadData();
+
+    const handleStorageChange = () => {
+      setGraphs(getGraphs());
     };
 
-    // Defer the initial load to ensure it runs only on the client after hydration
-    requestAnimationFrame(loadInitialData);
-  
-    const handleStorageChange = () => {
-       if (isMounted) {
-         setGraphs(getGraphs());
-       }
-    };
-  
     window.addEventListener('storage', handleStorageChange);
-  
+
     return () => {
-      isMounted = false;
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [loadData]);
@@ -112,7 +102,7 @@ export default function Home() {
   }, []);
 
   const handleExportData = () => {
-    if (!activeGraphId) return;
+    if (!activeGraphId || !activeGraph) return;
     exportDataFromLocalStorage(activeGraph);
     toast({ title: "Success", description: "Active graph exported successfully." });
   };
