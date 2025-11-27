@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { TabBar } from '@/components/tab-bar';
+import MetroMap from '@/components/metro-map';
 
 
 type ModalState<T> = { open: boolean; data?: T | null; mode?: 'add' | 'edit' | 'view' };
@@ -345,6 +346,7 @@ export default function Home() {
             <div className="flex justify-center border-b">
                 <TabsList>
                     <TabsTrigger value="graph">Graph</TabsTrigger>
+                    <TabsTrigger value="map">Map</TabsTrigger>
                     <TabsTrigger value="table">Table</TabsTrigger>
                 </TabsList>
             </div>
@@ -356,6 +358,14 @@ export default function Home() {
                     hoveredScenarioId={hoveredScenarioId} 
                     scenarioColorScale={scenarioColorScale}
                 />
+            </TabsContent>
+            <TabsContent value="map" className="flex-1 overflow-hidden relative">
+              <MetroMap 
+                  elements={elements}
+                  scenarios={visibleScenarios}
+                  onNodeClick={handleNodeClick}
+                  scenarioColorScale={scenarioColorScale}
+              />
             </TabsContent>
             <TabsContent value="table" className="flex-1 overflow-auto p-4">
                 <TableView 
@@ -499,3 +509,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
