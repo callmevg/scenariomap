@@ -14,7 +14,7 @@ interface MetroMapProps {
 
 const GRID_SIZE = 120;
 const NODE_RADIUS = 8;
-const LINE_WIDTH = 6;
+const LINE_WIDTH = 5;
 const STATION_OFFSET = 12; // How far lines stop from the center of a station
 
 // Helper function to create a key for a grid position
@@ -213,7 +213,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             const { source, target, parallelIndex, parallelTotal } = d;
             
             const totalShift = LINE_WIDTH * 1.5;
-            const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift / parallelTotal;
+            const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
 
             let { x: sx, y: sy } = source;
             let { x: tx, y: ty } = target;
@@ -240,27 +240,26 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             const midX = (sx2 + tx2) / 2;
             const midY = (sy2 + ty2) / 2;
 
-            if (Math.abs(dx) < 1 || Math.abs(dy) < 1 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 1) {
-                // Straight line (horizontal, vertical, or 45-degree diagonal)
+            if (Math.abs(dx) < 1 || Math.abs(dy) < 1) { // Horizontal or Vertical
                 return `M${sx2},${sy2}L${tx2},${ty2}`;
-            } else {
-                 // Curved line for non-straight connections
-                const cornerRadius = Math.min(Math.abs(dx), Math.abs(dy)) / 2;
-
-                const path = d3.path();
-                path.moveTo(sx2, sy2);
-                
-                if (Math.abs(dx) > Math.abs(dy)) { // more horizontal
-                    path.arcTo(midX, sy2, midX, midY, cornerRadius);
-                    path.arcTo(midX, ty2, tx2, ty2, cornerRadius);
-                } else { // more vertical
-                    path.arcTo(sx2, midY, midX, midY, cornerRadius);
-                    path.arcTo(tx2, midY, tx2, ty2, cornerRadius);
-                }
-
-                path.lineTo(tx2, ty2);
-                return path.toString();
             }
+
+            const path = d3.path();
+            path.moveTo(sx2, sy2);
+            
+            const cornerRadius = GRID_SIZE / 4;
+            
+            // Determine corner points
+            if (Math.abs(dx) > Math.abs(dy)) { // More horizontal than vertical
+                path.arcTo(midX, sy2, midX, midY, cornerRadius);
+                path.arcTo(midX, ty2, tx2, ty2, cornerRadius);
+            } else { // More vertical than horizontal
+                path.arcTo(sx2, midY, midX, midY, cornerRadius);
+                path.arcTo(tx2, midY, tx2, ty2, cornerRadius);
+            }
+
+            path.lineTo(tx2, ty2);
+            return path.toString();
         })
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
         .attr('stroke-width', LINE_WIDTH)
@@ -284,9 +283,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       .attr('stroke-width', 3);
 
     nodeGroup.append('text')
-        .attr('x', NODE_RADIUS + 5)
-        .attr('y', 4)
-        .attr('text-anchor', 'start')
+        .attr('x', 0)
+        .attr('y', NODE_RADIUS + 14)
+        .attr('text-anchor', 'middle')
         .attr('fill', 'hsl(var(--foreground))')
         .style('font-size', '14px')
         .style('pointer-events', 'none')
@@ -301,5 +300,3 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
-
-    
