@@ -215,50 +215,52 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             const totalShift = LINE_WIDTH * 1.5;
             const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
 
-            let { x: sx, y: sy } = source;
-            let { x: tx, y: ty } = target;
-
-            const dx = tx - sx;
-            const dy = ty - sy;
+            const dx = target.x - source.x;
+            const dy = target.y - source.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             
-            // normalized perpendicular vector
             const nx = -dy / dist;
             const ny = dx / dist;
 
-            sx += nx * offset;
-            sy += ny * offset;
-            tx += nx * offset;
-            ty += ny * offset;
+            const sx = source.x + nx * offset;
+            const sy = source.y + ny * offset;
+            const tx = target.x + nx * offset;
+            const ty = target.y + ny * offset;
 
-            // Shorten lines to not overlap stations
-            const sx2 = sx + (tx - sx) * STATION_OFFSET / dist;
-            const sy2 = sy + (ty - sy) * STATION_OFFSET / dist;
-            const tx2 = tx - (tx - sx) * STATION_OFFSET / dist;
-            const ty2 = ty - (ty - sy) * STATION_OFFSET / dist;
-            
-            const midX = (sx2 + tx2) / 2;
-            const midY = (sy2 + ty2) / 2;
-
-            if (Math.abs(dx) < 1 || Math.abs(dy) < 1) { // Horizontal or Vertical
-                return `M${sx2},${sy2}L${tx2},${ty2}`;
-            }
+            const sx2 = sx + (tx-sx) * STATION_OFFSET / dist;
+            const sy2 = sy + (ty-sy) * STATION_OFFSET / dist;
+            const tx2 = tx - (tx-sx) * STATION_OFFSET / dist;
+            const ty2 = ty - (ty-sy) * STATION_OFFSET / dist;
 
             const path = d3.path();
             path.moveTo(sx2, sy2);
             
             const cornerRadius = GRID_SIZE / 4;
             
-            // Determine corner points
-            if (Math.abs(dx) > Math.abs(dy)) { // More horizontal than vertical
-                path.arcTo(midX, sy2, midX, midY, cornerRadius);
-                path.arcTo(midX, ty2, tx2, ty2, cornerRadius);
-            } else { // More vertical than horizontal
-                path.arcTo(sx2, midY, midX, midY, cornerRadius);
-                path.arcTo(tx2, midY, tx2, ty2, cornerRadius);
-            }
+            if (Math.abs(dx) < 1) { // Vertical
+                path.lineTo(tx2, ty2);
+            } else if (Math.abs(dy) < 1) { // Horizontal
+                path.lineTo(tx2, ty2);
+            } else { // Diagonal
+                const midX = (sx2 + tx2) / 2;
+                const midY = (sy2 + ty2) / 2;
 
-            path.lineTo(tx2, ty2);
+                const c1x = sx2 + (midX-sx2)/2;
+                const c1y = sy2;
+                const c2x = midX;
+                const c2y = midY - (midY-sy2)/2;
+
+
+                if(Math.abs(dx) > Math.abs(dy)) { // Prefer horizontal segments
+                    path.lineTo(tx - dx * 0.5 - nx*offset, sy2);
+                    path.arcTo(tx - nx*offset, sy2, tx - nx*offset, sy2 + Math.sign(dy)*cornerRadius, cornerRadius);
+                    path.lineTo(tx2, ty2);
+                } else { // Prefer vertical segments
+                    path.lineTo(sx2, ty - dy * 0.5 - ny*offset);
+                    path.arcTo(sx2, ty - ny*offset, sx2 + Math.sign(dx)*cornerRadius, ty - ny*offset, cornerRadius);
+                    path.lineTo(tx2, ty2);
+                }
+            }
             return path.toString();
         })
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
