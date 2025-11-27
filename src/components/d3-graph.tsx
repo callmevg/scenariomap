@@ -78,7 +78,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
             .attr('stroke', d => d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
             .attr('stroke-width', d => d.isBuggy ? 4 : 2.5);
     }
-  }, [hoveredScenarioId, validScenarios]);
+  }, [hoveredScenarioId, validScenarios, sanitizeId]);
 
 
   useEffect(() => {
@@ -91,7 +91,6 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
     svg.selectAll('*').remove();
 
     const container = svg.append('g');
-    const allNodes = svg.selectAll<SVGCircleElement, UIElement>('.node-circle');
     
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 5])
@@ -204,8 +203,8 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
             d3.selectAll('.link').attr('stroke-opacity', 1).attr('stroke-width', 4);
             svg.selectAll('marker').style('visibility', 'visible');
             container.selectAll<SVGCircleElement, UIElement>('.node-circle')
-                .attr('stroke', d => d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
-                .attr('stroke-width', d => d.isBuggy ? 4 : 2.5);
+                .attr('stroke', node_d => node_d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
+                .attr('stroke-width', node_d => node_d.isBuggy ? 4 : 2.5);
         }
       });
     
@@ -260,7 +259,6 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
                 y: target.y - (dy * targetRadius / dr)
             };
             
-
             if (d.parallelTotal <= 1) {
               return `M${sourcePoint.x},${sourcePoint.y}L${targetPoint.x},${targetPoint.y}`;
             }
@@ -286,7 +284,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
         simulation.stop();
     };
 
-  }, [elements, validScenarios, onNodeClick, scenarioColorScale, radiusScale, elementScenarioCounts]);
+  }, [elements, validScenarios, onNodeClick, scenarioColorScale, radiusScale, elementScenarioCounts, sanitizeId, hoveredScenarioId]);
 
   const drag = (simulation: d3.Simulation<d3.SimulationNodeDatum, undefined>) => {
     function dragstarted(event: d3.D3DragEvent<any, any, any>, d: any) {

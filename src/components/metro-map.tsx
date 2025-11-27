@@ -15,6 +15,7 @@ interface MetroMapProps {
 const GRID_SIZE = 120;
 const NODE_RADIUS = 8;
 const LINE_WIDTH = 6;
+const STATION_OFFSET = 12; // How far lines stop from the center of a station
 
 // Helper function to create a key for a grid position
 const posKey = (x: number, y: number) => `${x},${y}`;
@@ -42,8 +43,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         return false;
     };
     
-    // --- New Layout Algorithm ---
-
     // 1. Find the longest scenario to use as the backbone
     const longestScenario = [...scenarios].sort((a, b) => {
         const lengthA = a.methods.reduce((sum, p) => sum + p.length, 0);
@@ -88,7 +87,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             if (!visited.has(neighborId)) {
                 visited.add(neighborId);
                 let placed = false;
-                // Try to place neighbors in adjacent cells (von Neumann neighborhood)
+                // Try to place neighbors in adjacent cells (von Neumann + diagonal)
                 const directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
                 for (const [dx, dy] of directions) {
                     if (placeNode(neighborId, x + dx, y + dy)) {
@@ -96,13 +95,13 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
                         break;
                     }
                 }
-                // If all adjacent are occupied, spiral out (simple version)
+                // If all adjacent are occupied, spiral out
                 if (!placed) {
                     let radius = 2;
                     while(!placed) {
                         for(let i = -radius; i <= radius; i++) {
                             for(let j = -radius; j <= radius; j++) {
-                                if (i === -radius || i === radius || j === -radius || j === radius) {
+                                if (Math.abs(i) === radius || Math.abs(j) === radius) {
                                     if(placeNode(neighborId, x+i, y+j)) {
                                         placed = true;
                                         break;
@@ -145,6 +144,25 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
           }
         }
       });
+    });
+    
+    // --- Group parallel links ---
+    const linkGroups: { [key: string]: any[] } = {};
+    links.forEach(link => {
+      const key = (link.source.id < link.target.id) 
+        ? `${link.source.id}-${link.target.id}` 
+        : `${link.target.id}-${link.source.id}`;
+      if (!linkGroups[key]) linkGroups[key] = [];
+      linkGroups[key].push(link);
+    });
+
+    links.forEach(link => {
+        const key = (link.source.id < link.target.id) 
+            ? `${link.source.id}-${link.target.id}` 
+            : `${link.target.id}-${link.source.id}`;
+        const group = linkGroups[key];
+        link.parallelIndex = group.indexOf(link);
+        link.parallelTotal = group.length;
     });
 
     return { nodes: laidOutNodes, links };
@@ -192,15 +210,56 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       .data(links)
       .join('path')
         .attr('d', d => {
-            const { source, target } = d;
-            const dx = target.x - source.x;
-            const dy = target.y - source.y;
+            const { source, target, parallelIndex, parallelTotal } = d;
             
-            // Simple elbow connector
-            if (Math.abs(dx) > Math.abs(dy)) {
-              return `M${source.x},${source.y} L${source.x + dx/2},${source.y} L${source.x + dx/2},${target.y} L${target.x},${target.y}`;
+            const totalShift = LINE_WIDTH * 1.5;
+            const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift / parallelTotal;
+
+            let { x: sx, y: sy } = source;
+            let { x: tx, y: ty } = target;
+
+            const dx = tx - sx;
+            const dy = ty - sy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // normalized perpendicular vector
+            const nx = -dy / dist;
+            const ny = dx / dist;
+
+            sx += nx * offset;
+            sy += ny * offset;
+            tx += nx * offset;
+            ty += ny * offset;
+
+            // Shorten lines to not overlap stations
+            const sx2 = sx + (tx - sx) * STATION_OFFSET / dist;
+            const sy2 = sy + (ty - sy) * STATION_OFFSET / dist;
+            const tx2 = tx - (tx - sx) * STATION_OFFSET / dist;
+            const ty2 = ty - (ty - sy) * STATION_OFFSET / dist;
+            
+            const midX = (sx2 + tx2) / 2;
+            const midY = (sy2 + ty2) / 2;
+
+            if (Math.abs(dx) < 1 || Math.abs(dy) < 1 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 1) {
+                // Straight line (horizontal, vertical, or 45-degree diagonal)
+                return `M${sx2},${sy2}L${tx2},${ty2}`;
             } else {
-              return `M${source.x},${source.y} L${source.x},${source.y + dy/2} L${target.x},${source.y + dy/2} L${target.x},${target.y}`;
+                 // Curved line for non-straight connections
+                const cornerRadius = Math.min(Math.abs(dx), Math.abs(dy)) / 2;
+
+                const path = d3.path();
+                path.moveTo(sx2, sy2);
+                
+                if (Math.abs(dx) > Math.abs(dy)) { // more horizontal
+                    path.arcTo(midX, sy2, midX, midY, cornerRadius);
+                    path.arcTo(midX, ty2, tx2, ty2, cornerRadius);
+                } else { // more vertical
+                    path.arcTo(sx2, midY, midX, midY, cornerRadius);
+                    path.arcTo(tx2, midY, tx2, ty2, cornerRadius);
+                }
+
+                path.lineTo(tx2, ty2);
+                return path.toString();
             }
         })
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
@@ -242,3 +301,5 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
+
+    
