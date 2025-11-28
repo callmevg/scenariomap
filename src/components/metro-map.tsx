@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
 
@@ -11,6 +11,15 @@ interface MetroMapProps {
   onNodeClick: (element: UIElement) => void;
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
 }
+
+type NodePosition = {
+  id: string;
+  x: number;
+  y: number;
+  fx: number | null;
+  fy: number | null;
+} & UIElement;
+
 
 const GRID_SIZE = 120;
 const NODE_RADIUS = 8;
@@ -22,18 +31,17 @@ const posKey = (x: number, y: number) => `${x},${y}`;
 
 const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  
-  const layout = useMemo(() => {
+  const [nodePositions, setNodePositions] = useState<NodePosition[]>([]);
+
+  const initialLayout = useMemo(() => {
     if (elements.length === 0) return { nodes: [], links: [] };
 
     const elementMap = new Map(elements.map(el => [el.id, { ...el }]));
     const grid: { [key: string]: string } = {}; // Stores elementId at a grid position
     const positions: { [key: string]: { x: number, y: number } } = {}; // Stores grid coordinates for an elementId
 
-    // Function to check if a grid cell is occupied
     const isOccupied = (x: number, y: number) => !!grid[posKey(x, y)];
 
-    // Function to place a node on the grid
     const placeNode = (nodeId: string, x: number, y: number) => {
         if (!isOccupied(x, y)) {
             grid[posKey(x, y)] = nodeId;
@@ -43,7 +51,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         return false;
     };
     
-    // 1. Find the longest scenario to use as the backbone
     const longestScenario = [...scenarios].sort((a, b) => {
         const lengthA = a.methods.reduce((sum, p) => sum + p.length, 0);
         const lengthB = b.methods.reduce((sum, p) => sum + p.length, 0);
@@ -52,7 +59,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
     const placedNodes = new Set<string>();
 
-    // 2. Place the longest scenario horizontally
     if (longestScenario) {
         const mainPath = longestScenario.methods.flat();
         mainPath.forEach((nodeId, i) => {
@@ -63,7 +69,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         });
     }
 
-    // 3. Place remaining nodes using a breadth-first approach
     const queue: string[] = [...placedNodes];
     const visited = new Set<string>(placedNodes);
 
@@ -73,7 +78,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
         const {x, y} = positions[nodeId];
 
-        // Find neighbors of this node from all scenarios
         const neighbors = new Set<string>();
         scenarios.forEach(scenario => {
             scenario.methods.forEach(method => {
@@ -87,7 +91,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             if (!visited.has(neighborId)) {
                 visited.add(neighborId);
                 let placed = false;
-                // Try to place neighbors in adjacent cells (von Neumann + diagonal)
                 const directions = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
                 for (const [dx, dy] of directions) {
                     if (placeNode(neighborId, x + dx, y + dy)) {
@@ -95,7 +98,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
                         break;
                     }
                 }
-                // If all adjacent are occupied, spiral out
                 if (!placed) {
                     let radius = 2;
                     while(!placed) {
@@ -118,16 +120,29 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         });
     }
 
-    // Convert grid coordinates to pixel coordinates
     const laidOutNodes = elements
-      .filter(el => positions[el.id]) // Only include nodes that were placed
+      .filter(el => positions[el.id])
       .map(node => ({
         ...node,
         x: positions[node.id].x * GRID_SIZE,
         y: positions[node.id].y * GRID_SIZE,
+        fx: null,
+        fy: null,
     }));
 
-    const nodeMap = new Map(laidOutNodes.map(n => [n.id, n]));
+    return laidOutNodes;
+
+  }, [elements, scenarios]);
+
+  useEffect(() => {
+    setNodePositions(initialLayout);
+  }, [initialLayout]);
+
+
+  const layout = useMemo(() => {
+    if (nodePositions.length === 0) return { nodes: [], links: [] };
+    
+    const nodeMap = new Map(nodePositions.map(n => [n.id, n]));
 
     const links: any[] = [];
     scenarios.forEach(scenario => {
@@ -146,7 +161,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       });
     });
     
-    // --- Group parallel links ---
     const linkGroups: { [key: string]: any[] } = {};
     links.forEach(link => {
       const key = (link.source.id < link.target.id) 
@@ -165,9 +179,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         link.parallelTotal = group.length;
     });
 
-    return { nodes: laidOutNodes, links };
+    return { nodes: nodePositions, links };
 
-  }, [elements, scenarios]);
+  }, [nodePositions, scenarios]);
 
   useEffect(() => {
     if (!svgRef.current || !layout) return;
@@ -191,92 +205,112 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         container.attr('transform', event.transform);
       });
       
-    // Calculate initial transform
-    const dataWidth = (d3.max(nodes, d => d.x) || 0) - (d3.min(nodes, d => d.x) || 0);
-    const dataHeight = (d3.max(nodes, d => d.y) || 0) - (d3.min(nodes, d => d.y) || 0);
+    const dataWidth = (d3.max(nodes, d => d.fx ?? d.x) || 0) - (d3.min(nodes, d => d.fx ?? d.x) || 0);
+    const dataHeight = (d3.max(nodes, d => d.fy ?? d.y) || 0) - (d3.min(nodes, d => d.fy ?? d.y) || 0);
     
     const scale = Math.min(width / (dataWidth + GRID_SIZE*2), height / (dataHeight + GRID_SIZE*2)) * 0.9;
-    const translateX = width / 2 - ((d3.min(nodes, d => d.x) || 0) + dataWidth / 2) * scale;
-    const translateY = height / 2 - ((d3.min(nodes, d => d.y) || 0) + dataHeight / 2) * scale;
+    const translateX = width / 2 - ((d3.min(nodes, d => d.fx ?? d.x) || 0) + dataWidth / 2) * scale;
+    const translateY = height / 2 - ((d3.min(nodes, d => d.fy ?? d.y) || 0) + dataHeight / 2) * scale;
     
     const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
     svg.call(zoom);
     svg.call(zoom.transform, initialTransform);
 
 
-    // --- Draw Links ---
+    const pathGenerator = (d: any) => {
+      const { source, target, parallelIndex, parallelTotal } = d;
+      
+      const sourceX = source.fx ?? source.x;
+      const sourceY = source.fy ?? source.y;
+      const targetX = target.fx ?? target.x;
+      const targetY = target.fy ?? target.y;
+      
+      const totalShift = LINE_WIDTH * 1.5;
+      const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
+
+      const dx = targetX - sourceX;
+      const dy = targetY - sourceY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      const nx = -dy / dist; // normal vector
+      const ny = dx / dist;
+
+      const sx = sourceX + nx * offset;
+      const sy = sourceY + ny * offset;
+      const tx = targetX + nx * offset;
+      const ty = targetY + ny * offset;
+      
+      const sx2 = sx + (tx-sx) * STATION_OFFSET / dist;
+      const sy2 = sy + (ty-sy) * STATION_OFFSET / dist;
+      const tx2 = tx - (tx-sx) * STATION_OFFSET / dist;
+      const ty2 = ty - (ty-sy) * STATION_OFFSET / dist;
+
+      const path = d3.path();
+      path.moveTo(sx2, sy2);
+      
+      const cornerRadius = GRID_SIZE / 4;
+      
+      // Use absolute differences to decide path shape
+      if (Math.abs(tx - sx) > Math.abs(ty - sy)) { // Horizontal preference
+          const midX = (sx + tx) / 2;
+          path.arcTo(midX, sy, midX, ty, Math.min(cornerRadius, Math.abs(midX-sx)));
+          path.arcTo(midX, ty, tx, ty, Math.min(cornerRadius, Math.abs(tx-midX)));
+      } else { // Vertical preference
+          const midY = (sy + ty) / 2;
+          path.arcTo(sx, midY, tx, midY, Math.min(cornerRadius, Math.abs(midY-sy)));
+          path.arcTo(tx, midY, tx, ty, Math.min(cornerRadius, Math.abs(ty-midY)));
+      }
+      path.lineTo(tx2, ty2);
+      
+      return path.toString();
+    };
+
     container.append('g')
       .selectAll('path')
       .data(links)
       .join('path')
-        .attr('d', d => {
-            const { source, target, parallelIndex, parallelTotal } = d;
-            
-            const totalShift = LINE_WIDTH * 1.5;
-            const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
-
-            const dx = target.x - source.x;
-            const dy = target.y - source.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            const nx = -dy / dist;
-            const ny = dx / dist;
-
-            const sx = source.x + nx * offset;
-            const sy = source.y + ny * offset;
-            const tx = target.x + nx * offset;
-            const ty = target.y + ny * offset;
-
-            const sx2 = sx + (tx-sx) * STATION_OFFSET / dist;
-            const sy2 = sy + (ty-sy) * STATION_OFFSET / dist;
-            const tx2 = tx - (tx-sx) * STATION_OFFSET / dist;
-            const ty2 = ty - (ty-sy) * STATION_OFFSET / dist;
-
-            const path = d3.path();
-            path.moveTo(sx2, sy2);
-            
-            const cornerRadius = GRID_SIZE / 4;
-            
-            if (Math.abs(dx) < 1) { // Vertical
-                path.lineTo(tx2, ty2);
-            } else if (Math.abs(dy) < 1) { // Horizontal
-                path.lineTo(tx2, ty2);
-            } else { // Diagonal
-                const midX = (sx2 + tx2) / 2;
-                const midY = (sy2 + ty2) / 2;
-
-                const c1x = sx2 + (midX-sx2)/2;
-                const c1y = sy2;
-                const c2x = midX;
-                const c2y = midY - (midY-sy2)/2;
-
-
-                if(Math.abs(dx) > Math.abs(dy)) { // Prefer horizontal segments
-                    path.lineTo(tx - dx * 0.5 - nx*offset, sy2);
-                    path.arcTo(tx - nx*offset, sy2, tx - nx*offset, sy2 + Math.sign(dy)*cornerRadius, cornerRadius);
-                    path.lineTo(tx2, ty2);
-                } else { // Prefer vertical segments
-                    path.lineTo(sx2, ty - dy * 0.5 - ny*offset);
-                    path.arcTo(sx2, ty - ny*offset, sx2 + Math.sign(dx)*cornerRadius, ty - ny*offset, cornerRadius);
-                    path.lineTo(tx2, ty2);
-                }
-            }
-            return path.toString();
-        })
+        .attr('class', 'metro-link')
+        .attr('d', pathGenerator)
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
         .attr('stroke-width', LINE_WIDTH)
         .attr('fill', 'none')
         .attr('stroke-linejoin', 'round')
         .attr('stroke-linecap', 'round');
 
-    // --- Draw Nodes ---
+    const drag = d3.drag<SVGGElement, NodePosition>()
+      .on('start', function(event, d) {
+          d3.select(this).raise();
+      })
+      .on('drag', function(event, d) {
+          const newPositions = nodePositions.map(n => {
+              if (n.id === d.id) {
+                  const newN = {...n};
+                  // Restrict movement to horizontal or vertical
+                  const dx = Math.abs(event.x - (newN.fx ?? newN.x));
+                  const dy = Math.abs(event.y - (newN.fy ?? newN.y));
+                  if (dx > dy) {
+                    newN.fx = event.x;
+                  } else {
+                    newN.fy = event.y;
+                  }
+                  return newN;
+              }
+              return n;
+          });
+          setNodePositions(newPositions);
+      })
+      .on('end', function(event, d) {
+          // Snap to grid on drag end if desired, or just leave it
+      });
+
     const nodeGroup = container.append('g')
       .selectAll('g')
-      .data(nodes)
+      .data(nodes, (d: any) => d.id)
       .join('g')
-      .attr('transform', d => `translate(${d.x},${d.y})`)
+      .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`)
       .on('click', (event, d) => onNodeClick(d))
-      .attr('class', 'cursor-pointer');
+      .attr('class', 'cursor-grab')
+      .call(drag);
 
     nodeGroup.append('circle')
       .attr('r', NODE_RADIUS)
@@ -295,10 +329,19 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
     nodeGroup.append('title')
       .text(d => d.name);
+      
+    // Update positions on re-render
+    container.selectAll<SVGGElement, NodePosition>('.cursor-grab')
+      .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`);
 
-  }, [layout, onNodeClick, scenarioColorScale]);
+    container.selectAll('.metro-link')
+      .attr('d', pathGenerator);
+
+  }, [layout, onNodeClick, scenarioColorScale, nodePositions]);
 
   return <svg ref={svgRef} className="w-full h-full bg-background/50"></svg>;
 };
 
 export default MetroMap;
+
+    
