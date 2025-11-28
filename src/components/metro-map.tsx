@@ -1,9 +1,11 @@
 
 "use client";
 
-import React, { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
+import { Button } from './ui/button';
+import { Undo2 } from 'lucide-react';
 
 interface MetroMapProps {
   elements: UIElement[];
@@ -20,25 +22,70 @@ type NodePosition = {
   fy: number | null;
 } & UIElement;
 
+type LinkControlPoint = {
+  x: number;
+  y: number;
+};
+
+type LinkWithControlPoints = {
+  source: NodePosition;
+  target: NodePosition;
+  scenarioId: string;
+  parallelIndex: number;
+  parallelTotal: number;
+  controlPoints: LinkControlPoint[];
+};
 
 const GRID_SIZE = 120;
 const NODE_RADIUS = 8;
 const LINE_WIDTH = 5;
-const STATION_OFFSET = 12; // How far lines stop from the center of a station
+const STATION_OFFSET = 12;
 
-// Helper function to create a key for a grid position
 const posKey = (x: number, y: number) => `${x},${y}`;
+
+// --- History Hook ---
+const useHistory = <T>(initialState: T) => {
+  const [history, setHistory] = useState<T[]>([initialState]);
+  const [index, setIndex] = useState(0);
+
+  const setState = (action: React.SetStateAction<T>, overwrite = false) => {
+    const newState = typeof action === 'function' ? (action as (prevState: T) => T)(history[index]) : action;
+    if (overwrite) {
+      const newHistory = [...history];
+      newHistory[index] = newState;
+      setHistory(newHistory);
+    } else {
+      const newHistory = history.slice(0, index + 1);
+      newHistory.push(newState);
+      setHistory(newHistory);
+      setIndex(newHistory.length - 1);
+    }
+  };
+
+  const undo = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    }
+  };
+
+  const canUndo = index > 0;
+
+  return [history[index], setState, undo, canUndo] as const;
+};
+
 
 const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [nodePositions, setNodePositions] = useState<NodePosition[]>([]);
+  const [nodePositions, setNodePositions, undoNodeMove, canUndo] = useHistory<NodePosition[]>([]);
+  const [linkControls, setLinkControls] = useState<Record<string, LinkControlPoint[]>>({});
+
 
   const initialLayout = useMemo(() => {
     if (elements.length === 0) return { nodes: [], links: [] };
 
     const elementMap = new Map(elements.map(el => [el.id, { ...el }]));
-    const grid: { [key: string]: string } = {}; // Stores elementId at a grid position
-    const positions: { [key: string]: { x: number, y: number } } = {}; // Stores grid coordinates for an elementId
+    const grid: { [key: string]: string } = {};
+    const positions: { [key: string]: { x: number, y: number } } = {};
 
     const isOccupied = (x: number, y: number) => !!grid[posKey(x, y)];
 
@@ -135,7 +182,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   }, [elements, scenarios]);
 
   useEffect(() => {
-    setNodePositions(initialLayout);
+    setNodePositions(initialLayout, true);
   }, [initialLayout]);
 
 
@@ -144,7 +191,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     
     const nodeMap = new Map(nodePositions.map(n => [n.id, n]));
 
-    const links: any[] = [];
+    const links: LinkWithControlPoints[] = [];
     scenarios.forEach(scenario => {
       scenario.methods.forEach(method => {
         for (let i = 0; i < method.length - 1; i++) {
@@ -154,7 +201,10 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             links.push({
               source: sourceNode,
               target: targetNode,
-              scenarioId: scenario.id
+              scenarioId: scenario.id,
+              parallelIndex: 0,
+              parallelTotal: 0,
+              controlPoints: [],
             });
           }
         }
@@ -170,18 +220,21 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       linkGroups[key].push(link);
     });
 
-    links.forEach(link => {
+    links.forEach((link, i) => {
         const key = (link.source.id < link.target.id) 
             ? `${link.source.id}-${link.target.id}` 
             : `${link.target.id}-${link.source.id}`;
         const group = linkGroups[key];
         link.parallelIndex = group.indexOf(link);
         link.parallelTotal = group.length;
+
+        const linkId = `${link.source.id}-${link.target.id}-${link.scenarioId}-${i}`;
+        link.controlPoints = linkControls[linkId] || [];
     });
 
     return { nodes: nodePositions, links };
 
-  }, [nodePositions, scenarios]);
+  }, [nodePositions, scenarios, linkControls]);
 
   useEffect(() => {
     if (!svgRef.current || !layout) return;
@@ -216,59 +269,77 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     svg.call(zoom);
     svg.call(zoom.transform, initialTransform);
 
+    const pathGenerator = (d: LinkWithControlPoints) => {
+        const { source, target, parallelIndex, parallelTotal, controlPoints } = d;
+        const sourceX = source.fx ?? source.x;
+        const sourceY = source.fy ?? source.y;
+        const targetX = target.fx ?? target.x;
+        const targetY = target.fy ?? target.y;
 
-    const pathGenerator = (d: any) => {
-      const { source, target, parallelIndex, parallelTotal } = d;
-      
-      const sourceX = source.fx ?? source.x;
-      const sourceY = source.fy ?? source.y;
-      const targetX = target.fx ?? target.x;
-      const targetY = target.fy ?? target.y;
-      
-      const totalShift = LINE_WIDTH * 1.5;
-      const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
+        const totalShift = LINE_WIDTH * 1.5;
+        const offset = (parallelIndex - (parallelTotal - 1) / 2) * totalShift;
+        const cornerRadius = GRID_SIZE / 4;
 
-      const dx = targetX - sourceX;
-      const dy = targetY - sourceY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      
-      const nx = -dy / dist; // normal vector
-      const ny = dx / dist;
+        const points = [{x: sourceX, y: sourceY}, ...controlPoints, {x: targetX, y: targetY}];
+        const path = d3.path();
 
-      const sx = sourceX + nx * offset;
-      const sy = sourceY + ny * offset;
-      const tx = targetX + nx * offset;
-      const ty = targetY + ny * offset;
-      
-      const sx2 = sx + (tx-sx) * STATION_OFFSET / dist;
-      const sy2 = sy + (ty-sy) * STATION_OFFSET / dist;
-      const tx2 = tx - (tx-sx) * STATION_OFFSET / dist;
-      const ty2 = ty - (ty-sy) * STATION_OFFSET / dist;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i+1];
 
-      const path = d3.path();
-      path.moveTo(sx2, sy2);
-      
-      const cornerRadius = GRID_SIZE / 4;
-      
-      // Use absolute differences to decide path shape
-      if (Math.abs(tx - sx) > Math.abs(ty - sy)) { // Horizontal preference
-          const midX = (sx + tx) / 2;
-          path.arcTo(midX, sy, midX, ty, Math.min(cornerRadius, Math.abs(midX-sx)));
-          path.arcTo(midX, ty, tx, ty, Math.min(cornerRadius, Math.abs(tx-midX)));
-      } else { // Vertical preference
-          const midY = (sy + ty) / 2;
-          path.arcTo(sx, midY, tx, midY, Math.min(cornerRadius, Math.abs(midY-sy)));
-          path.arcTo(tx, midY, tx, ty, Math.min(cornerRadius, Math.abs(ty-midY)));
-      }
-      path.lineTo(tx2, ty2);
-      
-      return path.toString();
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const nx = -dy / dist; // normal vector
+            const ny = dx / dist;
+
+            const sX = p1.x + nx * offset;
+            const sY = p1.y + ny * offset;
+            let tX = p2.x + nx * offset;
+            let tY = p2.y + ny * offset;
+
+            let startOffset = 0;
+            let endOffset = 0;
+            if (i === 0) startOffset = STATION_OFFSET;
+            if (i === points.length - 2) endOffset = STATION_OFFSET;
+            
+            const sX2 = sX + (tX-sX) * startOffset / dist;
+            const sY2 = sY + (tY-sY) * startOffset / dist;
+            const tX2 = tX - (tX-sX) * endOffset / dist;
+            const tY2 = tY - (tY-sY) * endOffset / dist;
+
+            path.moveTo(sX2, sY2);
+
+            if(i < points.length - 2) {
+                const p3 = points[i+2];
+                const nextDx = p3.x - p2.x;
+                const nextDy = p3.y - p2.y;
+                const nextDist = Math.sqrt(nextDx*nextDx + nextDy*nextDy);
+                const nextNx = -nextDy / nextDist;
+                const nextNy = nextDx / nextDist;
+                
+                const cornerX = tX;
+                const cornerY = tY;
+
+                const tX_arc_end = cornerX + nextNx * offset;
+                const tY_arc_end = cornerY + nextNy * offset;
+
+                path.arcTo(cornerX, cornerY, tX_arc_end, tY_arc_end, cornerRadius);
+
+            } else {
+                 path.lineTo(tX2, tY2);
+            }
+        }
+        return path.toString();
     };
 
-    container.append('g')
-      .selectAll('path')
+    const linkGroup = container.append('g')
+      .selectAll('g')
       .data(links)
-      .join('path')
+      .join('g')
+      .attr('class', 'metro-link-group');
+
+    linkGroup.append('path')
         .attr('class', 'metro-link')
         .attr('d', pathGenerator)
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
@@ -277,7 +348,62 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         .attr('stroke-linejoin', 'round')
         .attr('stroke-linecap', 'round');
 
-    const drag = d3.drag<SVGGElement, NodePosition>()
+    // Draggable Control Points for Lines
+    const controlPointDrag = d3.drag<SVGCircleElement, {link: LinkWithControlPoints, pointIndex: number}>()
+      .on('start', function() { d3.select(this).raise().attr("r", 8); })
+      .on('drag', function(event, d) {
+          const { link, pointIndex } = d;
+          const newControls = [...(link.controlPoints || [])];
+          newControls[pointIndex] = { x: event.x, y: event.y };
+
+          const linkId = `${link.source.id}-${link.target.id}-${link.scenarioId}-${links.indexOf(link)}`;
+          setLinkControls(prev => ({ ...prev, [linkId]: newControls }));
+      })
+      .on('end', function() { d3.select(this).attr("r", 6); });
+
+    // Midpoint handles to create new control points
+    const midpointHandleDrag = d3.drag<SVGRectElement, LinkWithControlPoints>()
+        .on('start', function(event, d) {
+            const linkId = `${d.source.id}-${d.target.id}-${d.scenarioId}-${links.indexOf(d)}`;
+            const newPoint = { x: event.x, y: event.y };
+            const newControls = [newPoint]; // For simplicity, start with one control point
+            setLinkControls(prev => ({...prev, [linkId]: newControls}));
+            d3.select(this).style('display', 'none'); // Hide handle after creating point
+        });
+
+    linkGroup.each(function(d, i) {
+        if (!d.controlPoints || d.controlPoints.length === 0) {
+            const pathNode = d3.select(this).select('path').node();
+            if (pathNode) {
+                const midpoint = pathNode.getPointAtLength(pathNode.getTotalLength() / 2);
+                 d3.select(this).append('rect')
+                    .attr('class', 'midpoint-handle')
+                    .attr('x', midpoint.x - 5)
+                    .attr('y', midpoint.y - 5)
+                    .attr('width', 10)
+                    .attr('height', 10)
+                    .attr('fill', 'rgba(0, 255, 0, 0.5)')
+                    .style('cursor', 'move')
+                    .datum(d)
+                    .call(midpointHandleDrag as any);
+            }
+        } else {
+             d.controlPoints.forEach((cp, pointIndex) => {
+                 d3.select(this).append('circle')
+                    .attr('class', 'control-point')
+                    .attr('cx', cp.x)
+                    .attr('cy', cp.y)
+                    .attr('r', 6)
+                    .attr('fill', 'rgba(0, 0, 255, 0.5)')
+                    .style('cursor', 'move')
+                    .datum({ link: d, pointIndex })
+                    .call(controlPointDrag as any);
+            });
+        }
+    });
+      
+
+    const nodeDrag = d3.drag<SVGGElement, NodePosition>()
       .on('start', function(event, d) {
           d3.select(this).raise();
       })
@@ -285,22 +411,26 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
           const newPositions = nodePositions.map(n => {
               if (n.id === d.id) {
                   const newN = {...n};
-                  // Restrict movement to horizontal or vertical
-                  const dx = Math.abs(event.x - (newN.fx ?? newN.x));
-                  const dy = Math.abs(event.y - (newN.fy ?? newN.y));
-                  if (dx > dy) {
-                    newN.fx = event.x;
-                  } else {
-                    newN.fy = event.y;
-                  }
+                  newN.fx = event.x;
+                  newN.fy = event.y;
                   return newN;
               }
               return n;
           });
-          setNodePositions(newPositions);
+          setNodePositions(newPositions, true); // Overwrite history during drag
       })
       .on('end', function(event, d) {
-          // Snap to grid on drag end if desired, or just leave it
+          // Snap to grid
+          const newX = Math.round(event.x / GRID_SIZE) * GRID_SIZE;
+          const newY = Math.round(event.y / GRID_SIZE) * GRID_SIZE;
+          
+          const finalPositions = nodePositions.map(n => {
+              if (n.id === d.id) {
+                  return {...n, fx: newX, fy: newY};
+              }
+              return n;
+          });
+          setNodePositions(finalPositions); // Create new history entry on drop
       });
 
     const nodeGroup = container.append('g')
@@ -310,7 +440,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`)
       .on('click', (event, d) => onNodeClick(d))
       .attr('class', 'cursor-grab')
-      .call(drag);
+      .call(nodeDrag);
 
     nodeGroup.append('circle')
       .attr('r', NODE_RADIUS)
@@ -330,16 +460,25 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     nodeGroup.append('title')
       .text(d => d.name);
       
-    // Update positions on re-render
     container.selectAll<SVGGElement, NodePosition>('.cursor-grab')
       .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`);
 
     container.selectAll('.metro-link')
       .attr('d', pathGenerator);
 
-  }, [layout, onNodeClick, scenarioColorScale, nodePositions]);
+  }, [layout, onNodeClick, scenarioColorScale, nodePositions, setNodePositions, linkControls]);
 
-  return <svg ref={svgRef} className="w-full h-full bg-background/50"></svg>;
+  return (
+    <div className="relative w-full h-full">
+        <svg ref={svgRef} className="w-full h-full bg-background/50"></svg>
+        <div className="absolute top-2 left-2">
+            <Button onClick={undoNodeMove} disabled={!canUndo} variant="outline" size="sm">
+                <Undo2 className="mr-2 h-4 w-4" />
+                Undo Move
+            </Button>
+        </div>
+    </div>
+  );
 };
 
 export default MetroMap;
