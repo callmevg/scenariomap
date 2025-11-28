@@ -46,5 +46,3 @@ export function Header({ onExport, onImport, disabled, children }: HeaderProps) 
     </header>
   );
 }
-
-    
