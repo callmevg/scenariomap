@@ -105,6 +105,10 @@ export default function Home() {
     setElementModal({ open: true, data: element, mode: 'view' });
   }, []);
 
+  const handleScenarioHover = useCallback((scenarioId: string | null) => {
+    setHoveredScenarioId(scenarioId);
+  }, []);
+
   const handleExportData = () => {
     if (!activeGraphId || !activeGraph) return;
     exportDataFromLocalStorage(activeGraph);
@@ -350,7 +354,7 @@ export default function Home() {
                     scenarios={visibleScenarios} 
                     onNodeClick={handleNodeClick} 
                     hoveredScenarioId={hoveredScenarioId} 
-                    onScenarioHover={setHoveredScenarioId}
+                    onScenarioHover={handleScenarioHover}
                     scenarioColorScale={scenarioColorScale}
                 />
             </TabsContent>
@@ -377,7 +381,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header onExport={handleExportData} onImport={handleImportData}>
+      <Header>
         {hasMounted && (
             <TabBar
                 graphs={graphs}
