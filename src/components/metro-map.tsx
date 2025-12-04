@@ -81,7 +81,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
 
   const initialLayout = useMemo(() => {
-    if (elements.length === 0) return { nodes: [], links: [] };
+    if (elements.length === 0) return [];
 
     const elementMap = new Map(elements.map(el => [el.id, { ...el }]));
     const grid: { [key: string]: string } = {};
@@ -166,6 +166,23 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             }
         });
     }
+
+    // Place any unplaced nodes
+    elements.forEach(el => {
+        if (!positions[el.id]) {
+            let x = 0, y = 0, placed = false;
+            while(!placed) {
+                for (let i = 0; i < x + 1; i++) {
+                   if (placeNode(el.id, i, y)) { placed = true; break; }
+                }
+                if (placed) break;
+                for (let i = 0; i < y + 1; i++) {
+                   if (placeNode(el.id, x, i)) { placed = true; break; }
+                }
+                x++; y++;
+            }
+        }
+    });
 
     const laidOutNodes = elements
       .filter(el => positions[el.id])
@@ -375,17 +392,20 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         if (!d.controlPoints || d.controlPoints.length === 0) {
             const pathNode = d3.select(this).select('path').node();
             if (pathNode) {
-                const midpoint = pathNode.getPointAtLength(pathNode.getTotalLength() / 2);
-                 d3.select(this).append('rect')
-                    .attr('class', 'midpoint-handle')
-                    .attr('x', midpoint.x - 5)
-                    .attr('y', midpoint.y - 5)
-                    .attr('width', 10)
-                    .attr('height', 10)
-                    .attr('fill', 'rgba(0, 255, 0, 0.5)')
-                    .style('cursor', 'move')
-                    .datum(d)
-                    .call(midpointHandleDrag as any);
+                const totalLength = pathNode.getTotalLength();
+                if (totalLength > 0) {
+                    const midpoint = pathNode.getPointAtLength(totalLength / 2);
+                    d3.select(this).append('rect')
+                        .attr('class', 'midpoint-handle')
+                        .attr('x', midpoint.x - 5)
+                        .attr('y', midpoint.y - 5)
+                        .attr('width', 10)
+                        .attr('height', 10)
+                        .attr('fill', 'rgba(0, 255, 0, 0.5)')
+                        .style('cursor', 'move')
+                        .datum(d)
+                        .call(midpointHandleDrag as any);
+                }
             }
         } else {
              d.controlPoints.forEach((cp, pointIndex) => {
