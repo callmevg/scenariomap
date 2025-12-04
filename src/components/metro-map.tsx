@@ -207,7 +207,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     if (initialLayout) {
         setNodePositions(initialLayout, true);
     }
-  }, [initialLayout, setNodePositions]);
+  }, [initialLayout]);
 
 
   const layout = useMemo(() => {
@@ -285,7 +285,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       allLinks.style('opacity', 1);
       allNodes.style('opacity', 1);
     }
-  }, [hoveredScenarioId]);
+  }, [hoveredScenarioId, scenarios]);
 
   useEffect(() => {
     if (!svgRef.current || !layout) return;
@@ -559,4 +559,5 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
 export default MetroMap;
 
+    
     
