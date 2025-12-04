@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -70,12 +70,18 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
         
         allNodes
             .attr('stroke', d => {
-                if (d.isBuggy) return 'hsl(var(--destructive))';
-                return hoveredElementIds.has(d.id) ? 'hsl(var(--primary))' : 'hsl(var(--border))';
+                if (hoveredElementIds.has(d.id)) {
+                    // If it's in the scenario, highlight it. If it's also buggy, use a stronger highlight.
+                    return d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--primary))';
+                }
+                // If not in scenario, use a neutral border color
+                return 'hsl(var(--border))';
             })
             .attr('stroke-width', d => {
-                 if (d.isBuggy) return 4;
-                 return hoveredElementIds.has(d.id) ? 3 : 2;
+                 if (hoveredElementIds.has(d.id)) {
+                    return d.isBuggy ? 4 : 3;
+                 }
+                 return 2; // Default stroke for non-highlighted
             });
 
     } else {
@@ -300,12 +306,12 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
     
     function dragended(event: d3.D3DragEvent<any, any, any>, d: any) {
       if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
       
       if (dragStartPos) {
         const dist = Math.sqrt(Math.pow(event.x - dragStartPos.x, 2) + Math.pow(event.y - dragStartPos.y, 2));
         if (dist < 5) { // If drag distance is small, treat it as a click
+          d.fx = null; // Unfix node so it doesn't get stuck
+          d.fy = null;
           onClick(d);
         }
       }
