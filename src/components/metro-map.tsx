@@ -47,23 +47,24 @@ const STATION_OFFSET = 12;
 const posKey = (x: number, y: number) => `${x},${y}`;
 
 // --- History Hook ---
-const useHistory = <T>(initialState: T) => {
+const useHistory = <T extends any>(initialState: T) => {
   const [history, setHistory] = useState<T[]>([initialState]);
   const [index, setIndex] = useState(0);
 
-  const setState = (action: React.SetStateAction<T>, overwrite = false) => {
+  const setState = useCallback((action: React.SetStateAction<T>, overwrite = false) => {
     const newState = typeof action === 'function' ? (action as (prevState: T) => T)(history[index]) : action;
     if (overwrite) {
       const newHistory = [...history];
       newHistory[index] = newState;
       setHistory(newHistory);
     } else {
+      if (JSON.stringify(history[index]) === JSON.stringify(newState)) return;
       const newHistory = history.slice(0, index + 1);
       newHistory.push(newState);
       setHistory(newHistory);
       setIndex(newHistory.length - 1);
     }
-  };
+  }, [history, index]);
 
   const undo = () => {
     if (index > 0) {
@@ -261,25 +262,33 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     const allNodes = svg.selectAll('.metro-node-group');
-    const allLinks = svg.selectAll('path.metro-link');
+    const allLinks = svg.selectAll<SVGPathElement, LinkWithControlPoints>('path.metro-link');
+    const allLinkGroups = svg.selectAll('g.metro-link-group');
 
     const currentHoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
 
     if (hoveredScenarioId && currentHoveredScenario) {
         const hoveredElementIds = new Set(currentHoveredScenario.methods.flat());
 
-        allLinks.style('opacity', 0.1);
+        allLinks.style('opacity', 0.2);
         allNodes.style('opacity', 0.5);
 
-        const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
+        const hoveredLinks = allLinks.filter(d => d.scenarioId === hoveredScenarioId);
         
-        hoveredLinks.style('opacity', 1).raise();
+        hoveredLinks
+          .style('opacity', 1)
+          .attr('stroke-width', LINE_WIDTH + 2);
+        
+        // Raise the parent group of the hovered links
+        allLinkGroups.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId).raise();
         
         const hoveredNodes = allNodes.filter(d => hoveredElementIds.has((d as NodePosition).id));
         hoveredNodes.style('opacity', 1).raise();
 
     } else {
-        allLinks.style('opacity', 1);
+        allLinks
+          .style('opacity', 1)
+          .attr('stroke-width', LINE_WIDTH);
         allNodes.style('opacity', 1);
     }
   }, [hoveredScenarioId, scenarios]);
@@ -322,11 +331,11 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   useEffect(() => {
       if (!svgRef.current || !zoomRef.current || !layout.nodes.length || initialZoomDone.current) return;
       
-      const svg = d3.select(svgRef.current);
+      const svgNode = svgRef.current;
       const zoom = zoomRef.current;
       const { nodes } = layout;
 
-      const bounds = svg.node()!.getBoundingClientRect();
+      const bounds = svgNode.getBoundingClientRect();
       if (bounds.width === 0 || bounds.height === 0) return;
 
       const xExtent = d3.extent(nodes, d => d.fx ?? d.x);
@@ -343,16 +352,14 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       
       const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
       
-      svg.call(zoom.transform, initialTransform);
+      d3.select(svgNode).call(zoom.transform, initialTransform);
       initialZoomDone.current = true;
 
   }, [layout.nodes]);
 
-  // Effect to set initial positions (runs only when initialLayout changes)
+  // Effect to set initial positions
   useEffect(() => {
-    if (initialLayout.length > 0) {
-      setNodePositions(initialLayout, true);
-    }
+    setNodePositions(initialLayout);
   }, [initialLayout, setNodePositions]);
   
   // Effect for drawing and updates
@@ -435,9 +442,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         return path.toString();
     };
 
-    // Group links by their source and target nodes to create single hit areas
-    const hitAreaLinks = d3.groups(links, d => `${d.source.id}-${d.target.id}`);
-
     const linkGroup = container.selectAll('g.metro-link-group')
       .data(links, (d:any) => `${d.source.id}-${d.target.id}-${d.scenarioId}`);
       
@@ -446,11 +450,17 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       .attr('class', 'metro-link-group');
 
     linkGroupEnter.append('path')
-        .attr('class', 'metro-link');
+        .attr('class', 'metro-link')
+        .on('mouseover', function(event, d) {
+            onScenarioHover(d.scenarioId);
+        })
+        .on('mouseout', function(event, d) {
+            onScenarioHover(null);
+        });
 
     linkGroupEnter.append('title');
 
-    const mergedLinkGroup = linkGroupEnter.merge(linkGroup);
+    const mergedLinkGroup = linkGroupEnter.merge(linkGroup as any);
 
     mergedLinkGroup.select('path.metro-link')
         .attr('d', pathGenerator)
@@ -459,56 +469,12 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         .attr('fill', 'none')
         .attr('stroke-linejoin', 'round')
         .attr('stroke-linecap', 'round')
-        .style('pointer-events', 'none'); // Disable pointer events on visible lines
+        .style('cursor', 'pointer');
     
     mergedLinkGroup.select('title')
       .text(d => scenarios.find(s => s.id === d.scenarioId)?.name || '');
 
     linkGroup.exit().remove();
-    
-    const hitAreaGroup = container.selectAll('g.hit-area-group')
-        .data(hitAreaLinks, d => d[0]);
-
-    const hitAreaGroupEnter = hitAreaGroup.enter()
-        .append('g')
-        .attr('class', 'hit-area-group');
-    
-    hitAreaGroupEnter.append('path')
-        .attr('class', 'metro-link-hit-area')
-        .attr('fill', 'transparent')
-        .attr('stroke', 'transparent')
-        .attr('stroke-width', LINE_WIDTH + 10) // Make hit area larger
-        .attr('stroke-linecap', 'round');
-
-    hitAreaGroup.exit().remove();
-    
-    const mergedHitAreaGroup = hitAreaGroupEnter.merge(hitAreaGroup);
-
-    mergedHitAreaGroup.select('path.metro-link-hit-area')
-      .datum(d => d[1]) // Bind the array of links for this segment
-      .attr('d', (linksInGroup: any) => {
-        // Use the path of the first link for the hit area shape.
-        // This assumes parallel links follow roughly the same path.
-        return pathGenerator(linksInGroup[0]);
-      })
-      .on('mouseover', function(event, linksInGroup: any) {
-        // Get the topmost element at the cursor position
-        const topElement = document.elementFromPoint(event.clientX, event.clientY);
-        if (topElement && topElement.classList.contains('metro-link')) {
-            const d3TopElement = d3.select<Element, LinkWithControlPoints>(topElement);
-            const topData = d3TopElement.datum();
-            if (topData) {
-                onScenarioHover(topData.scenarioId);
-            }
-        } else if (linksInGroup.length > 0) {
-            // Fallback for when elementFromPoint fails: just use the first link in the group
-             onScenarioHover(linksInGroup[0].scenarioId);
-        }
-      })
-      .on('mouseout', () => {
-        onScenarioHover(null);
-      })
-      .raise(); // Ensure hit area is on top
       
 
     const nodeDrag = d3.drag<SVGGElement, NodePosition>()
@@ -584,5 +550,3 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
-
-    
