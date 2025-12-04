@@ -294,6 +294,8 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
 
     // Create a map of existing element names to their IDs for quick lookup
     const existingElementNames = new Map(activeGraph.elements.map(el => [el.name.toLowerCase(), el.id]));
+    const existingScenarioNames = new Set(activeGraph.scenarios.map(sc => sc.name.toLowerCase()));
+
 
     importedElements.forEach((el: any) => {
         const oldId = el.id;
@@ -318,6 +320,11 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
     });
 
     const newScenarios: UIScenario[] = importedScenarios.map((scenario: any) => {
+        // Skip if a scenario with the same name already exists
+        if (existingScenarioNames.has(scenario.name.toLowerCase())) {
+            return null;
+        }
+
         let methods: string[][];
         const sourceMethods = scenario.methods || scenario.paths || (scenario.elementIds ? [scenario.elementIds] : []);
         
@@ -327,11 +334,12 @@ export const importData = async (jsonData: string, activeGraphId: string): Promi
 
         return {
             ...scenario,
-            name: scenario.name, // Ensure new scenarios can have same name
             id: `sc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             methods: methods.filter(method => method.length > 0),
         }
-    }).filter((scenario: UIScenario) => scenario.methods.length > 0);
+    }).filter((scenario): scenario is UIScenario => {
+        return scenario !== null && scenario.methods.length > 0;
+    });
 
     // Merge new elements and scenarios into the active graph
     activeGraph.elements.push(...newElements);
