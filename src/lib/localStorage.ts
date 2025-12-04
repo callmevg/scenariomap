@@ -5,6 +5,94 @@ import type { UIElement, UIScenario, GraphData } from './types';
 
 const STORAGE_KEY = 'scenario-map-data';
 
+// --- De-duplication Logic ---
+const deduplicateData = (graphs: Record<string, GraphData>): Record<string, GraphData> => {
+    const newGraphs = JSON.parse(JSON.stringify(graphs)); // Deep copy to avoid mutation issues
+
+    for (const graphId in newGraphs) {
+        let graph = newGraphs[graphId];
+        let scenarios = graph.scenarios;
+
+        // --- 1. De-duplicate methods within the SAME scenario ---
+        scenarios.forEach(scenario => {
+            const seenMethods = new Set<string>();
+            scenario.methods = scenario.methods.filter(method => {
+                const methodKey = JSON.stringify(method.sort()); // Sort to treat ['1','2'] and ['2','1'] as same *path*
+                if (seenMethods.has(methodKey)) {
+                    return false;
+                }
+                seenMethods.add(methodKey);
+                return true;
+            });
+        });
+
+        // --- 2. De-duplicate methods across DIFFERENT scenarios ---
+        const methodToScenariosMap = new Map<string, string[]>();
+        scenarios.forEach(scenario => {
+            scenario.methods.forEach(method => {
+                const methodKey = JSON.stringify(method.sort());
+                if (!methodToScenariosMap.has(methodKey)) {
+                    methodToScenariosMap.set(methodKey, []);
+                }
+                methodToScenariosMap.get(methodKey)!.push(scenario.id);
+            });
+        });
+
+        methodToScenariosMap.forEach((scenarioIds, methodKey) => {
+            if (scenarioIds.length > 1) {
+                const scenariosWithMethod = scenarios
+                    .filter(s => scenarioIds.includes(s.id))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+
+                const firstScenario = scenariosWithMethod[0];
+                const otherScenarios = scenariosWithMethod.slice(1);
+
+                otherScenarios.forEach(otherScenario => {
+                    const originalMethod = JSON.parse(methodKey);
+                    otherScenario.methods = otherScenario.methods.filter(m => JSON.stringify(m.sort()) !== methodKey);
+                });
+            }
+        });
+        
+        // Remove scenarios that became empty
+        scenarios = scenarios.filter(s => s.methods.length > 0);
+
+
+        // --- 3. De-duplicate entire scenarios ---
+        const scenarioToIdsMap = new Map<string, string[]>();
+        scenarios.forEach(scenario => {
+            // A scenario's signature is its sorted list of sorted methods
+            const scenarioKey = JSON.stringify(scenario.methods.map(m => [...m].sort()).sort());
+            if (!scenarioToIdsMap.has(scenarioKey)) {
+                scenarioToIdsMap.set(scenarioKey, []);
+            }
+            scenarioToIdsMap.get(scenarioKey)!.push(scenario.id);
+        });
+
+        const scenariosToRemove = new Set<string>();
+        scenarioToIdsMap.forEach((ids) => {
+            if (ids.length > 1) {
+                const duplicateScenarios = scenarios
+                    .filter(s => ids.includes(s.id))
+                    .sort((a, b) => {
+                        const groupCompare = (a.group || '').localeCompare(b.group || '');
+                        if (groupCompare !== 0) return groupCompare;
+                        return a.name.localeCompare(b.name);
+                    });
+                
+                // Mark all but the first one for removal
+                duplicateScenarios.slice(1).forEach(s => scenariosToRemove.add(s.id));
+            }
+        });
+
+        graph.scenarios = scenarios.filter(s => !scenariosToRemove.has(s.id));
+        newGraphs[graphId] = graph;
+    }
+
+    return newGraphs;
+};
+
+
 // --- Helper Functions ---
 export const getGraphs = (): Record<string, GraphData> => {
   if (typeof window === 'undefined') return {};
@@ -14,7 +102,8 @@ export const getGraphs = (): Record<string, GraphData> => {
 
 export const saveGraphs = (graphs: Record<string, GraphData>) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(graphs));
+  const deduplicatedGraphs = deduplicateData(graphs);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(deduplicatedGraphs));
   window.dispatchEvent(new Event('storage'));
 };
 
@@ -305,4 +394,3 @@ export const addSampleData = (): Record<string, GraphData> => {
 export const signIn = async () => {
   return Promise.resolve();
 };
-
