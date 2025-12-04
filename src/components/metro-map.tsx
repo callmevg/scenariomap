@@ -204,10 +204,13 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   }, [elements, scenarios]);
 
   useEffect(() => {
-    if (initialLayout.length > 0 && nodePositions.length === 0) {
-      setNodePositions(initialLayout, true);
+    if (initialLayout.length > 0) {
+      const isInitialState = nodePositions.length === 0 || JSON.stringify(nodePositions) === JSON.stringify([]);
+      if (isInitialState) {
+        setNodePositions(initialLayout, true);
+      }
     }
-  }, [initialLayout, nodePositions, setNodePositions]);
+  }, [initialLayout]);
 
 
   const layout = useMemo(() => {
@@ -261,56 +264,73 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   }, [nodePositions, scenarios, linkControls]);
 
 
+  // Effect for hover highlighting
   useEffect(() => {
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     const allNodes = svg.selectAll('.metro-node-group');
-    const allLinks = svg.selectAll('.metro-link-group');
+    const allLinks = svg.selectAll('.metro-link'); // Target paths directly
 
     const currentHoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
 
     if (hoveredScenarioId && currentHoveredScenario) {
-      const hoveredElementIds = new Set(currentHoveredScenario.methods.flat());
+        const hoveredElementIds = new Set(currentHoveredScenario.methods.flat());
 
-      allLinks.style('opacity', 0.1);
-      allNodes.style('opacity', 0.5);
+        allLinks.style('opacity', 0.1);
+        allNodes.style('opacity', 0.5);
 
-      const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
-      hoveredLinks.style('opacity', 1).raise();
-      
-      const hoveredNodes = allNodes.filter(d => hoveredElementIds.has((d as NodePosition).id));
-      hoveredNodes.style('opacity', 1).raise();
+        const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
+        hoveredLinks.style('opacity', 1).each(function() {
+            // Raise the parent 'g' element
+            const parent = this.parentNode as SVGGElement | null;
+            if (parent) {
+                d3.select(parent).raise();
+            }
+        });
+        
+        const hoveredNodes = allNodes.filter(d => hoveredElementIds.has((d as NodePosition).id));
+        hoveredNodes.style('opacity', 1).raise();
 
     } else {
-      allLinks.style('opacity', 1);
-      allNodes.style('opacity', 1);
+        allLinks.style('opacity', 1);
+        allNodes.style('opacity', 1);
     }
   }, [hoveredScenarioId, scenarios]);
 
-  // Effect for initial setup and zoom
+  // Effect for initial container setup
   useEffect(() => {
-      if (!svgRef.current) return;
+      if (!svgRef.current || containerRef.current) return;
       const svg = d3.select(svgRef.current);
-      
       containerRef.current = svg.append('g').node();
       
-      const zoom = d3.zoom<SVGSVGElement, unknown>()
-          .scaleExtent([0.1, 4])
-          .on('zoom', (event) => {
-              d3.select(containerRef.current).attr('transform', event.transform);
-          });
-      
-      svg.call(zoom);
-      zoomRef.current = zoom;
-      
-      // Clean up on unmount
       return () => {
-          svg.selectAll('*').remove();
+          svg.selectAll('g').remove();
           containerRef.current = null;
-          zoomRef.current = null;
       };
   }, []);
   
+  // Effect to setup zoom behavior
+  useEffect(() => {
+    if (!svgRef.current || zoomRef.current) return;
+    const svg = d3.select(svgRef.current);
+    
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.1, 4])
+        .on('zoom', (event) => {
+            if (containerRef.current) {
+                d3.select(containerRef.current).attr('transform', event.transform);
+            }
+        });
+    
+    svg.call(zoom);
+    zoomRef.current = zoom;
+
+    return () => {
+        svg.on('.zoom', null);
+        zoomRef.current = null;
+    }
+  }, []);
+
   // Effect to set initial zoom
   useEffect(() => {
       if (!svgRef.current || !zoomRef.current || !layout.nodes.length || svgRef.current.dataset.zoomed) return;
@@ -574,3 +594,5 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
+
+    
