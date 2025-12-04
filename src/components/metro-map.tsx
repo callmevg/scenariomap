@@ -83,6 +83,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [nodePositions, setNodePositions, undoNodeMove, canUndo] = useHistory<NodePosition[]>([]);
   const [linkControls, setLinkControls] = useState<Record<string, LinkControlPoint[]>>({});
+  const initialZoomDone = useRef(false);
 
 
   const initialLayout = useMemo(() => {
@@ -272,12 +273,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
         const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
         
-        hoveredLinks.style('opacity', 1).each(function() {
-            const parent = this.parentNode as SVGGElement | null;
-            if (parent) {
-                d3.select(parent).raise();
-            }
-        });
+        hoveredLinks.style('opacity', 1).raise();
         
         const hoveredNodes = allNodes.filter(d => hoveredElementIds.has((d as NodePosition).id));
         hoveredNodes.style('opacity', 1).raise();
@@ -324,7 +320,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
   // Effect to set initial zoom (runs only once)
   useEffect(() => {
-      if (!svgRef.current || !zoomRef.current || !layout.nodes.length || svgRef.current.dataset.zoomed) return;
+      if (!svgRef.current || !zoomRef.current || !layout.nodes.length || initialZoomDone.current) return;
       
       const svg = d3.select(svgRef.current);
       const zoom = zoomRef.current;
@@ -336,7 +332,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       const xExtent = d3.extent(nodes, d => d.fx ?? d.x);
       const yExtent = d3.extent(nodes, d => d.fy ?? d.y);
 
-      if (!xExtent[0] || !xExtent[1] || !yExtent[0] || !yExtent[1]) return;
+      if (xExtent[0] === undefined || xExtent[1] === undefined || yExtent[0] === undefined || yExtent[1] === undefined) return;
 
       const dataWidth = xExtent[1] - xExtent[0];
       const dataHeight = yExtent[1] - yExtent[0];
@@ -348,7 +344,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
       
       svg.call(zoom.transform, initialTransform);
-      svgRef.current.dataset.zoomed = "true";
+      initialZoomDone.current = true;
 
   }, [layout.nodes]);
 
@@ -357,7 +353,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     if (initialLayout.length > 0) {
       setNodePositions(initialLayout, true);
     }
-  }, [initialLayout]);
+  }, [initialLayout, setNodePositions]);
   
   // Effect for drawing and updates
   useEffect(() => {
@@ -439,6 +435,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         return path.toString();
     };
 
+    // Group links by their source and target nodes to create single hit areas
+    const hitAreaLinks = d3.groups(links, d => `${d.source.id}-${d.target.id}`);
+
     const linkGroup = container.selectAll('g.metro-link-group')
       .data(links, (d:any) => `${d.source.id}-${d.target.id}-${d.scenarioId}`);
       
@@ -460,75 +459,56 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         .attr('fill', 'none')
         .attr('stroke-linejoin', 'round')
         .attr('stroke-linecap', 'round')
-        .on('mouseover', (event, d) => onScenarioHover(d.scenarioId))
-        .on('mouseout', () => onScenarioHover(null));
+        .style('pointer-events', 'none'); // Disable pointer events on visible lines
     
     mergedLinkGroup.select('title')
       .text(d => scenarios.find(s => s.id === d.scenarioId)?.name || '');
 
     linkGroup.exit().remove();
+    
+    const hitAreaGroup = container.selectAll('g.hit-area-group')
+        .data(hitAreaLinks, d => d[0]);
 
+    const hitAreaGroupEnter = hitAreaGroup.enter()
+        .append('g')
+        .attr('class', 'hit-area-group');
+    
+    hitAreaGroupEnter.append('path')
+        .attr('class', 'metro-link-hit-area')
+        .attr('fill', 'transparent')
+        .attr('stroke', 'transparent')
+        .attr('stroke-width', LINE_WIDTH + 10) // Make hit area larger
+        .attr('stroke-linecap', 'round');
 
-    // Draggable Control Points for Lines
-    const controlPointDrag = d3.drag<SVGCircleElement, {link: LinkWithControlPoints, pointIndex: number}>()
-      .on('start', function() { d3.select(this).raise().attr("r", 8); })
-      .on('drag', function(event, d) {
-          const { link, pointIndex } = d;
-          const newControls = [...(link.controlPoints || [])];
-          
-          const newX = Math.round(event.x / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
-          const newY = Math.round(event.y / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
+    hitAreaGroup.exit().remove();
+    
+    const mergedHitAreaGroup = hitAreaGroupEnter.merge(hitAreaGroup);
 
-          newControls[pointIndex] = { x: newX, y: newY };
-
-          const linkId = `${link.source.id}-${link.target.id}-${link.scenarioId}-${links.indexOf(link)}`;
-          setLinkControls(prev => ({ ...prev, [linkId]: newControls }));
+    mergedHitAreaGroup.select('path.metro-link-hit-area')
+      .datum(d => d[1]) // Bind the array of links for this segment
+      .attr('d', (linksInGroup: any) => {
+        // Use the path of the first link for the hit area shape.
+        // This assumes parallel links follow roughly the same path.
+        return pathGenerator(linksInGroup[0]);
       })
-      .on('end', function() { d3.select(this).attr("r", 6); });
-
-    // Midpoint handles to create new control points
-    const midpointHandleDrag = d3.drag<SVGRectElement, LinkWithControlPoints>()
-        .on('start', function(event, d) {
-            const linkId = `${d.source.id}-${d.target.id}-${d.scenarioId}-${links.indexOf(d)}`;
-            const newPoint = { x: event.x, y: event.y };
-            const newControls = [newPoint]; // For simplicity, start with one control point
-            setLinkControls(prev => ({...prev, [linkId]: newControls}));
-            d3.select(this).style('display', 'none'); // Hide handle after creating point
-        });
-
-    mergedLinkGroup.each(function(d, i) {
-        if (!d.controlPoints || d.controlPoints.length === 0) {
-            const pathNode = d3.select(this).select('path').node();
-            if (pathNode) {
-                const totalLength = pathNode.getTotalLength();
-                if (totalLength > 0) {
-                    const midpoint = pathNode.getPointAtLength(totalLength / 2);
-                    d3.select(this).selectAll('rect.midpoint-handle').data([d]).join('rect')
-                        .attr('class', 'midpoint-handle')
-                        .attr('x', midpoint.x - 5)
-                        .attr('y', midpoint.y - 5)
-                        .attr('width', 10)
-                        .attr('height', 10)
-                        .attr('fill', 'rgba(0, 255, 0, 0.5)')
-                        .style('cursor', 'move')
-                        .style('opacity', 0) // Hidden by default
-                        .on('mouseover', function() { d3.select(this).style('opacity', 1)})
-                        .on('mouseout', function() { d3.select(this).style('opacity', 0)})
-                        .call(midpointHandleDrag as any);
-                }
+      .on('mouseover', function(event, linksInGroup: any) {
+        // Get the topmost element at the cursor position
+        const topElement = document.elementFromPoint(event.clientX, event.clientY);
+        if (topElement && topElement.classList.contains('metro-link')) {
+            const d3TopElement = d3.select<Element, LinkWithControlPoints>(topElement);
+            const topData = d3TopElement.datum();
+            if (topData) {
+                onScenarioHover(topData.scenarioId);
             }
-        } else {
-             d3.select(this).selectAll('circle.control-point').data(d.controlPoints.map((cp, pointIndex) => ({ link: d, pointIndex, cp})))
-                .join('circle')
-                .attr('class', 'control-point')
-                .attr('cx', data => data.cp.x)
-                .attr('cy', data => data.cp.y)
-                .attr('r', 6)
-                .attr('fill', 'rgba(0, 0, 255, 0.5)')
-                .style('cursor', 'move')
-                .call(controlPointDrag as any);
+        } else if (linksInGroup.length > 0) {
+            // Fallback for when elementFromPoint fails: just use the first link in the group
+             onScenarioHover(linksInGroup[0].scenarioId);
         }
-    });
+      })
+      .on('mouseout', () => {
+        onScenarioHover(null);
+      })
+      .raise(); // Ensure hit area is on top
       
 
     const nodeDrag = d3.drag<SVGGElement, NodePosition>()
@@ -604,3 +584,5 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
+
+    
