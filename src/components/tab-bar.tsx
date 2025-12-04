@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Separator } from './ui/separator';
 
 interface TabBarProps {
   graphs: Record<string, GraphData>;
@@ -91,41 +92,43 @@ export function TabBar({
     <>
       <div className="flex items-center border bg-background rounded-lg p-1 overflow-x-auto">
         <div className="flex items-center flex-nowrap">
-          {graphIds.map((graphId) => (
-            <div
-              key={graphId}
-              onClick={() => onSelectTab(graphId)}
-              onDoubleClick={() => handleStartEditing(graphId, graphs[graphId].name)}
-              className={cn(
-                'flex items-center h-8 px-3 rounded-md cursor-pointer group relative transition-colors flex-shrink-0',
-                activeGraphId === graphId
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted/50'
-              )}
-            >
-              {editingTabId === graphId ? (
-                <Input
-                  ref={inputRef}
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onBlur={handleFinishEditing}
-                  onKeyDown={handleKeyDown}
-                  className="h-6 w-32 px-1 text-sm bg-background text-foreground"
-                />
-              ) : (
-                <span className="text-sm max-w-[150px] truncate" title={graphs[graphId].name}>
-                    {graphs[graphId].name}
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("h-5 w-5 ml-2 opacity-0 group-hover:opacity-100 flex-shrink-0", activeGraphId === graphId && "hover:bg-primary/80")}
-                onClick={(e) => handleDeleteClick(e, graphId)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
+          {graphIds.map((graphId, index) => (
+            <React.Fragment key={graphId}>
+                {index > 0 && <Separator orientation="vertical" className="h-4" />}
+                <div
+                onClick={() => onSelectTab(graphId)}
+                onDoubleClick={() => handleStartEditing(graphId, graphs[graphId].name)}
+                className={cn(
+                    'flex items-center h-8 px-3 rounded-md cursor-pointer group relative transition-colors flex-shrink-0',
+                    activeGraphId === graphId
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted/50'
+                )}
+                >
+                {editingTabId === graphId ? (
+                    <Input
+                    ref={inputRef}
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={handleFinishEditing}
+                    onKeyDown={handleKeyDown}
+                    className="h-6 w-32 px-1 text-sm bg-background text-foreground"
+                    />
+                ) : (
+                    <span className="text-sm max-w-[150px] truncate" title={graphs[graphId].name}>
+                        {graphs[graphId].name}
+                    </span>
+                )}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-5 w-5 ml-2 opacity-0 group-hover:opacity-100 flex-shrink-0", activeGraphId === graphId && "hover:bg-primary/80")}
+                    onClick={(e) => handleDeleteClick(e, graphId)}
+                >
+                    <X className="h-3 w-3" />
+                </Button>
+                </div>
+            </React.Fragment>
           ))}
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 flex-shrink-0" onClick={onAddGraph}>
