@@ -204,8 +204,11 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   }, [elements, scenarios]);
 
   useEffect(() => {
-    if (initialLayout) {
-        setNodePositions(initialLayout, true);
+    if (initialLayout.length > 0) {
+        const hasInitialState = nodePositions.length > 0;
+        if (!hasInitialState) {
+            setNodePositions(initialLayout, true);
+        }
     }
   }, [initialLayout]);
 
@@ -285,7 +288,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       allLinks.style('opacity', 1);
       allNodes.style('opacity', 1);
     }
-  }, [hoveredScenarioId, scenarios]);
+  }, [hoveredScenarioId]);
 
   useEffect(() => {
     if (!svgRef.current || !layout) return;
@@ -309,16 +312,18 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         container.attr('transform', event.transform);
       });
       
-    const dataWidth = (d3.max(nodes, d => d.fx ?? d.x) || 0) - (d3.min(nodes, d => d.fx ?? d.x) || 0);
-    const dataHeight = (d3.max(nodes, d => d.fy ?? d.y) || 0) - (d3.min(nodes, d => d.fy ?? d.y) || 0);
-    
-    const scale = Math.min(width / (dataWidth + GRID_SIZE*2), height / (dataHeight + GRID_SIZE*2)) * 0.9;
-    const translateX = width / 2 - ((d3.min(nodes, d => d.fx ?? d.x) || 0) + dataWidth / 2) * scale;
-    const translateY = height / 2 - ((d3.min(nodes, d => d.fy ?? d.y) || 0) + dataHeight / 2) * scale;
-    
-    const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
     svg.call(zoom);
-    if (!svg.property("__zoom")) { // Only set initial zoom if not already set
+
+    // Only set initial zoom if it hasn't been set before (i.e., user hasn't interacted)
+    if (!svg.property("__zoom")) {
+        const dataWidth = (d3.max(nodes, d => d.fx ?? d.x) || 0) - (d3.min(nodes, d => d.fx ?? d.x) || 0);
+        const dataHeight = (d3.max(nodes, d => d.fy ?? d.y) || 0) - (d3.min(nodes, d => d.fy ?? d.y) || 0);
+        
+        const scale = Math.min(width / (dataWidth + GRID_SIZE*2), height / (dataHeight + GRID_SIZE*2)) * 0.9;
+        const translateX = width / 2 - ((d3.min(nodes, d => d.fx ?? d.x) || 0) + dataWidth / 2) * scale;
+        const translateY = height / 2 - ((d3.min(nodes, d => d.fy ?? d.y) || 0) + dataHeight / 2) * scale;
+        
+        const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
         svg.call(zoom.transform, initialTransform);
     }
 
