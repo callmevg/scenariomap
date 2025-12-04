@@ -4,18 +4,21 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface D3GraphProps {
   elements: UIElement[];
   scenarios: UIScenario[];
   onNodeClick: (element: UIElement) => void;
   hoveredScenarioId: string | null;
+  onScenarioHover: (scenarioId: string | null) => void;
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
 }
 
-const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hoveredScenarioId, scenarioColorScale }) => {
+const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hoveredScenarioId, onScenarioHover, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<d3.SimulationNodeDatum, undefined>>();
+  const { toast } = useToast();
 
   const validScenarios = useMemo(() => scenarios.filter(f => f && f.id && f.methods && f.methods.length > 0), [scenarios]);
   
@@ -54,7 +57,11 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
 
     if (hoveredScenarioId) {
         const hoveredScenario = validScenarios.find(f => f.id === hoveredScenarioId);
-        const hoveredElementIds = new Set(hoveredScenario?.methods.flat());
+        if (!hoveredScenario) {
+            return;
+        }
+
+        const hoveredElementIds = new Set(hoveredScenario.methods.flat());
 
         svg.selectAll('.link').attr('stroke-opacity', 0.1);
         svg.selectAll(`.scenario-${sanitizeId(hoveredScenarioId)}`).attr('stroke-opacity', 1).attr('stroke-width', 3);
@@ -185,11 +192,10 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
       .attr('fill', 'none')
       .attr('marker-end', d => `url(#arrow-${sanitizeId(d.scenarioId)})`)
       .on('mouseover', function(event, d) {
-        d3.select(this).attr('stroke-width', 4);
+        onScenarioHover(d.scenarioId);
       })
       .on('mouseout', function(event, d) {
-        const isHovered = hoveredScenarioId === d.scenarioId;
-        d3.select(this).attr('stroke-width', isHovered ? 3 : 2);
+        onScenarioHover(null);
       });
     
     link.append('title')
@@ -275,7 +281,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
         simulation.stop();
     };
 
-  }, [elements, validScenarios, onNodeClick, scenarioColorScale, radiusScale, elementScenarioCounts, sanitizeId, hoveredScenarioId]);
+  }, [elements, validScenarios, onNodeClick, onScenarioHover, scenarioColorScale, radiusScale, elementScenarioCounts, sanitizeId]);
 
   const drag = (simulation: d3.Simulation<d3.SimulationNodeDatum, undefined>, onClick: (d: any) => void) => {
     let dragStartPos: { x: number, y: number } | null = null;

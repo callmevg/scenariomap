@@ -350,6 +350,7 @@ export default function Home() {
                     scenarios={visibleScenarios} 
                     onNodeClick={handleNodeClick} 
                     hoveredScenarioId={hoveredScenarioId} 
+                    onScenarioHover={setHoveredScenarioId}
                     scenarioColorScale={scenarioColorScale}
                 />
             </TabsContent>
