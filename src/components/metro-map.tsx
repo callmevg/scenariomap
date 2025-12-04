@@ -203,15 +203,6 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
   }, [elements, scenarios]);
 
-  useEffect(() => {
-    if (initialLayout.length > 0) {
-      const isInitialState = nodePositions.length === 0 || JSON.stringify(nodePositions) === JSON.stringify([]);
-      if (isInitialState) {
-        setNodePositions(initialLayout, true);
-      }
-    }
-  }, [initialLayout]);
-
 
   const layout = useMemo(() => {
     if (!Array.isArray(nodePositions) || nodePositions.length === 0) return { nodes: [], links: [] };
@@ -269,7 +260,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     const allNodes = svg.selectAll('.metro-node-group');
-    const allLinks = svg.selectAll('.metro-link'); // Target paths directly
+    const allLinks = svg.selectAll('path.metro-link');
 
     const currentHoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
 
@@ -280,8 +271,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         allNodes.style('opacity', 0.5);
 
         const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
+        
         hoveredLinks.style('opacity', 1).each(function() {
-            // Raise the parent 'g' element
             const parent = this.parentNode as SVGGElement | null;
             if (parent) {
                 d3.select(parent).raise();
@@ -331,7 +322,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     }
   }, []);
 
-  // Effect to set initial zoom
+  // Effect to set initial zoom (runs only once)
   useEffect(() => {
       if (!svgRef.current || !zoomRef.current || !layout.nodes.length || svgRef.current.dataset.zoomed) return;
       
@@ -342,12 +333,17 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       const bounds = svg.node()!.getBoundingClientRect();
       if (bounds.width === 0 || bounds.height === 0) return;
 
-      const dataWidth = (d3.max(nodes, d => d.fx ?? d.x) || 0) - (d3.min(nodes, d => d.fx ?? d.x) || 0);
-      const dataHeight = (d3.max(nodes, d => d.fy ?? d.y) || 0) - (d3.min(nodes, d => d.fy ?? d.y) || 0);
+      const xExtent = d3.extent(nodes, d => d.fx ?? d.x);
+      const yExtent = d3.extent(nodes, d => d.fy ?? d.y);
+
+      if (!xExtent[0] || !xExtent[1] || !yExtent[0] || !yExtent[1]) return;
+
+      const dataWidth = xExtent[1] - xExtent[0];
+      const dataHeight = yExtent[1] - yExtent[0];
       
       const scale = Math.min(bounds.width / (dataWidth + GRID_SIZE*2), bounds.height / (dataHeight + GRID_SIZE*2)) * 0.9;
-      const translateX = bounds.width / 2 - ((d3.min(nodes, d => d.fx ?? d.x) || 0) + dataWidth / 2) * scale;
-      const translateY = bounds.height / 2 - ((d3.min(nodes, d => d.fy ?? d.y) || 0) + dataHeight / 2) * scale;
+      const translateX = bounds.width / 2 - (xExtent[0] + dataWidth / 2) * scale;
+      const translateY = bounds.height / 2 - (yExtent[0] + dataHeight / 2) * scale;
       
       const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
       
@@ -356,6 +352,13 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
   }, [layout.nodes]);
 
+  // Effect to set initial positions (runs only when initialLayout changes)
+  useEffect(() => {
+    if (initialLayout.length > 0) {
+      setNodePositions(initialLayout, true);
+    }
+  }, [initialLayout]);
+  
   // Effect for drawing and updates
   useEffect(() => {
     if (!containerRef.current || !layout) return;
@@ -437,27 +440,34 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     };
 
     const linkGroup = container.selectAll('g.metro-link-group')
-      .data(links, (d:any) => `${d.source.id}-${d.target.id}-${d.scenarioId}`)
-      .join('g')
-      .attr('class', 'metro-link-group')
-      .on('mouseover', (event, d) => onScenarioHover(d.scenarioId))
-      .on('mouseout', () => onScenarioHover(null));
+      .data(links, (d:any) => `${d.source.id}-${d.target.id}-${d.scenarioId}`);
+      
+    const linkGroupEnter = linkGroup.enter()
+      .append('g')
+      .attr('class', 'metro-link-group');
 
-    linkGroup.selectAll('path.metro-link')
-        .data(d => [d])
-        .join('path')
-        .attr('class', 'metro-link')
+    linkGroupEnter.append('path')
+        .attr('class', 'metro-link');
+
+    linkGroupEnter.append('title');
+
+    const mergedLinkGroup = linkGroupEnter.merge(linkGroup);
+
+    mergedLinkGroup.select('path.metro-link')
         .attr('d', pathGenerator)
         .attr('stroke', d => scenarioColorScale(d.scenarioId))
         .attr('stroke-width', LINE_WIDTH)
         .attr('fill', 'none')
         .attr('stroke-linejoin', 'round')
-        .attr('stroke-linecap', 'round');
+        .attr('stroke-linecap', 'round')
+        .on('mouseover', (event, d) => onScenarioHover(d.scenarioId))
+        .on('mouseout', () => onScenarioHover(null));
     
-    linkGroup.selectAll('title')
-      .data(d => [d])
-      .join('title')
+    mergedLinkGroup.select('title')
       .text(d => scenarios.find(s => s.id === d.scenarioId)?.name || '');
+
+    linkGroup.exit().remove();
+
 
     // Draggable Control Points for Lines
     const controlPointDrag = d3.drag<SVGCircleElement, {link: LinkWithControlPoints, pointIndex: number}>()
@@ -486,7 +496,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             d3.select(this).style('display', 'none'); // Hide handle after creating point
         });
 
-    linkGroup.each(function(d, i) {
+    mergedLinkGroup.each(function(d, i) {
         if (!d.controlPoints || d.controlPoints.length === 0) {
             const pathNode = d3.select(this).select('path').node();
             if (pathNode) {
@@ -594,5 +604,3 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
-
-    
