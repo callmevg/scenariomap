@@ -267,11 +267,10 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     const allNodes = svg.selectAll('.metro-node-group');
     const allLinks = svg.selectAll('.metro-link-group');
 
-    if (hoveredScenarioId) {
-      const hoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
-      if (!hoveredScenario) return;
+    const currentHoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
 
-      const hoveredElementIds = new Set(hoveredScenario.methods.flat());
+    if (hoveredScenarioId && currentHoveredScenario) {
+      const hoveredElementIds = new Set(currentHoveredScenario.methods.flat());
 
       allLinks.style('opacity', 0.1);
       allNodes.style('opacity', 0.5);
@@ -286,7 +285,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       allLinks.style('opacity', 1);
       allNodes.style('opacity', 1);
     }
-  }, [hoveredScenarioId, scenarios]);
+  }, [hoveredScenarioId]);
 
   useEffect(() => {
     if (!svgRef.current || !layout) return;
@@ -559,3 +558,5 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
+
+    
