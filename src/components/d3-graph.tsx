@@ -201,8 +201,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
       .data(nodes)
       .join('g')
       .attr('class', 'cursor-pointer')
-      .on('click', (event, d) => onNodeClick(d))
-      .call(drag(simulation));
+      .call(drag(simulation, onNodeClick));
 
     node.append('circle')
       .attr('class', 'node-circle')
@@ -278,11 +277,14 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
 
   }, [elements, validScenarios, onNodeClick, scenarioColorScale, radiusScale, elementScenarioCounts, sanitizeId, hoveredScenarioId]);
 
-  const drag = (simulation: d3.Simulation<d3.SimulationNodeDatum, undefined>) => {
+  const drag = (simulation: d3.Simulation<d3.SimulationNodeDatum, undefined>, onClick: (d: any) => void) => {
+    let dragStartPos: { x: number, y: number } | null = null;
+
     function dragstarted(event: d3.D3DragEvent<any, any, any>, d: any) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;
       d.fy = d.y;
+      dragStartPos = { x: event.x, y: event.y };
     }
     
     function dragged(event: d3.D3DragEvent<any, any, any>, d: any) {
@@ -294,6 +296,14 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
       if (!event.active) simulation.alphaTarget(0);
       d.fx = null;
       d.fy = null;
+      
+      if (dragStartPos) {
+        const dist = Math.sqrt(Math.pow(event.x - dragStartPos.x, 2) + Math.pow(event.y - dragStartPos.y, 2));
+        if (dist < 5) { // If drag distance is small, treat it as a click
+          onClick(d);
+        }
+      }
+      dragStartPos = null;
     }
     
     return d3.drag()
