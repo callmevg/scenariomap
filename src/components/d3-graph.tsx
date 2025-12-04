@@ -15,14 +15,14 @@ interface D3GraphProps {
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
 }
 
+const sanitizeId = (id: string) => id.replace(/[.\s]/g, '-');
+
 const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hoveredScenarioId, onScenarioHover, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<d3.SimulationNodeDatum, undefined>>();
   const { toast } = useToast();
 
   const validScenarios = useMemo(() => scenarios.filter(f => f && f.id && f.methods && f.methods.length > 0), [scenarios]);
-  
-  const sanitizeId = (id: string) => id.replace(/[.\s]/g, '-');
   
   const elementScenarioCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -85,7 +85,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
             .attr('stroke', d => d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
             .attr('stroke-width', d => d.isBuggy ? 4 : 2);
     }
-  }, [hoveredScenarioId, validScenarios, sanitizeId]);
+  }, [hoveredScenarioId, validScenarios]);
 
 
   useEffect(() => {
@@ -281,7 +281,7 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
         simulation.stop();
     };
 
-  }, [elements, validScenarios, onNodeClick, onScenarioHover, scenarioColorScale, radiusScale, elementScenarioCounts, sanitizeId]);
+  }, [elements, validScenarios, onNodeClick, onScenarioHover, scenarioColorScale, radiusScale, elementScenarioCounts]);
 
   const drag = (simulation: d3.Simulation<d3.SimulationNodeDatum, undefined>, onClick: (d: any) => void) => {
     let dragStartPos: { x: number, y: number } | null = null;
