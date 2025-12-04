@@ -13,6 +13,17 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
         let graph = newGraphs[graphId];
         let scenarios = graph.scenarios;
 
+        // --- 0. De-duplicate scenarios by NAME ---
+        const seenNames = new Set<string>();
+        scenarios = scenarios.filter(scenario => {
+            const nameLower = scenario.name.toLowerCase();
+            if (seenNames.has(nameLower)) {
+                return false; // Remove duplicate
+            }
+            seenNames.add(nameLower);
+            return true; // Keep first one
+        });
+
         // --- 1. De-duplicate methods within the SAME scenario ---
         scenarios.forEach(scenario => {
             const seenMethods = new Set<string>();
@@ -57,7 +68,7 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
         scenarios = scenarios.filter(s => s.methods.length > 0);
 
 
-        // --- 3. De-duplicate entire scenarios ---
+        // --- 3. De-duplicate entire scenarios by content ---
         const scenarioToIdsMap = new Map<string, string[]>();
         scenarios.forEach(scenario => {
             // A scenario's signature is its stringified, sorted list of methods
@@ -96,7 +107,8 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
 export const getGraphs = (): Record<string, GraphData> => {
   if (typeof window === 'undefined') return {};
   const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : {};
+  // Apply de-duplication on load to clean up existing data
+  return data ? deduplicateData(JSON.parse(data)) : {};
 };
 
 export const saveGraphs = (graphs: Record<string, GraphData>) => {
@@ -401,3 +413,5 @@ export const addSampleData = (): Record<string, GraphData> => {
 export const signIn = async () => {
   return Promise.resolve();
 };
+
+    
