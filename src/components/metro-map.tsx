@@ -6,12 +6,15 @@ import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
 import { Button } from './ui/button';
 import { Undo2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface MetroMapProps {
   elements: UIElement[];
   scenarios: UIScenario[];
   onNodeClick: (element: UIElement) => void;
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
+  hoveredScenarioId: string | null;
+  onScenarioHover: (scenarioId: string | null) => void;
 }
 
 type NodePosition = {
@@ -42,6 +45,8 @@ const LINE_WIDTH = 5;
 const STATION_OFFSET = 12;
 
 const posKey = (x: number, y: number) => `${x},${y}`;
+
+const sanitizeId = (id: string) => id.replace(/[.\s]/g, '-');
 
 // --- History Hook ---
 const useHistory = <T>(initialState: T) => {
@@ -74,7 +79,7 @@ const useHistory = <T>(initialState: T) => {
 };
 
 
-const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, scenarioColorScale }) => {
+const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, scenarioColorScale, hoveredScenarioId, onScenarioHover }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [nodePositions, setNodePositions, undoNodeMove, canUndo] = useHistory<NodePosition[]>([]);
   const [linkControls, setLinkControls] = useState<Record<string, LinkControlPoint[]>>({});
@@ -199,12 +204,14 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
   }, [elements, scenarios]);
 
   useEffect(() => {
-    setNodePositions(initialLayout, true);
-  }, [initialLayout]);
+    if (initialLayout) {
+        setNodePositions(initialLayout, true);
+    }
+  }, [initialLayout, setNodePositions]);
 
 
   const layout = useMemo(() => {
-    if (nodePositions.length === 0) return { nodes: [], links: [] };
+    if (!Array.isArray(nodePositions) || nodePositions.length === 0) return { nodes: [], links: [] };
     
     const nodeMap = new Map(nodePositions.map(n => [n.id, n]));
 
@@ -253,6 +260,34 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 
   }, [nodePositions, scenarios, linkControls]);
 
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const allNodes = svg.selectAll('.metro-node-group');
+    const allLinks = svg.selectAll('.metro-link-group');
+
+    if (hoveredScenarioId) {
+      const hoveredScenario = scenarios.find(f => f.id === hoveredScenarioId);
+      if (!hoveredScenario) return;
+
+      const hoveredElementIds = new Set(hoveredScenario.methods.flat());
+
+      allLinks.style('opacity', 0.1);
+      allNodes.style('opacity', 0.5);
+
+      const hoveredLinks = allLinks.filter(d => (d as LinkWithControlPoints).scenarioId === hoveredScenarioId);
+      hoveredLinks.style('opacity', 1).raise();
+      
+      const hoveredNodes = allNodes.filter(d => hoveredElementIds.has((d as NodePosition).id));
+      hoveredNodes.style('opacity', 1).raise();
+
+    } else {
+      allLinks.style('opacity', 1);
+      allNodes.style('opacity', 1);
+    }
+  }, [hoveredScenarioId, scenarios]);
+
   useEffect(() => {
     if (!svgRef.current || !layout) return;
 
@@ -284,7 +319,10 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     
     const initialTransform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
     svg.call(zoom);
-    svg.call(zoom.transform, initialTransform);
+    if (!svg.property("__zoom")) { // Only set initial zoom if not already set
+        svg.call(zoom.transform, initialTransform);
+    }
+
 
     const pathGenerator = (d: LinkWithControlPoints) => {
         const { source, target, parallelIndex, parallelTotal, controlPoints } = d;
@@ -307,6 +345,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist === 0) continue;
+            
             const nx = -dy / dist; // normal vector
             const ny = dx / dist;
 
@@ -332,6 +372,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
                 const nextDx = p3.x - p2.x;
                 const nextDy = p3.y - p2.y;
                 const nextDist = Math.sqrt(nextDx*nextDx + nextDy*nextDy);
+                if (nextDist === 0) continue;
+
                 const nextNx = -nextDy / nextDist;
                 const nextNy = nextDx / nextDist;
                 
@@ -351,10 +393,14 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     };
 
     const linkGroup = container.append('g')
+      .attr('class', 'links-container')
       .selectAll('g')
       .data(links)
       .join('g')
-      .attr('class', 'metro-link-group');
+      .attr('class', 'metro-link-group')
+      .on('mouseover', (event, d) => onScenarioHover(d.scenarioId))
+      .on('mouseout', () => onScenarioHover(null));
+
 
     linkGroup.append('path')
         .attr('class', 'metro-link')
@@ -364,6 +410,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
         .attr('fill', 'none')
         .attr('stroke-linejoin', 'round')
         .attr('stroke-linecap', 'round');
+    
+    linkGroup.append('title')
+      .text(d => scenarios.find(s => s.id === d.scenarioId)?.name || '');
 
     // Draggable Control Points for Lines
     const controlPointDrag = d3.drag<SVGCircleElement, {link: LinkWithControlPoints, pointIndex: number}>()
@@ -371,7 +420,11 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       .on('drag', function(event, d) {
           const { link, pointIndex } = d;
           const newControls = [...(link.controlPoints || [])];
-          newControls[pointIndex] = { x: event.x, y: event.y };
+          
+          const newX = Math.round(event.x / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
+          const newY = Math.round(event.y / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
+
+          newControls[pointIndex] = { x: newX, y: newY };
 
           const linkId = `${link.source.id}-${link.target.id}-${link.scenarioId}-${links.indexOf(link)}`;
           setLinkControls(prev => ({ ...prev, [linkId]: newControls }));
@@ -403,6 +456,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
                         .attr('height', 10)
                         .attr('fill', 'rgba(0, 255, 0, 0.5)')
                         .style('cursor', 'move')
+                        .style('opacity', 0) // Hidden by default
+                        .on('mouseover', function() { d3.select(this).style('opacity', 1)})
+                        .on('mouseout', function() { d3.select(this).style('opacity', 0)})
                         .datum(d)
                         .call(midpointHandleDrag as any);
                 }
@@ -454,12 +510,13 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
       });
 
     const nodeGroup = container.append('g')
+      .attr('class', 'nodes-container')
       .selectAll('g')
       .data(nodes, (d: any) => d.id)
       .join('g')
       .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`)
+      .attr('class', 'metro-node-group cursor-grab')
       .on('click', (event, d) => onNodeClick(d))
-      .attr('class', 'cursor-grab')
       .call(nodeDrag);
 
     nodeGroup.append('circle')
@@ -480,13 +537,13 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
     nodeGroup.append('title')
       .text(d => d.name);
       
-    container.selectAll<SVGGElement, NodePosition>('.cursor-grab')
+    container.selectAll<SVGGElement, NodePosition>('.metro-node-group')
       .attr('transform', d => `translate(${d.fx ?? d.x},${d.fy ?? d.y})`);
 
     container.selectAll('.metro-link')
       .attr('d', pathGenerator);
 
-  }, [layout, onNodeClick, scenarioColorScale, nodePositions, setNodePositions, linkControls]);
+  }, [layout, onNodeClick, scenarioColorScale, nodePositions, setNodePositions, linkControls, onScenarioHover, scenarios]);
 
   return (
     <div className="relative w-full h-full">
@@ -502,5 +559,3 @@ const MetroMap: React.FC<MetroMapProps> = ({ elements, scenarios, onNodeClick, s
 };
 
 export default MetroMap;
-
-    

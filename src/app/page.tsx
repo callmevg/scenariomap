@@ -363,6 +363,8 @@ export default function Home() {
                   elements={elements}
                   scenarios={visibleScenarios}
                   onNodeClick={handleNodeClick}
+                  hoveredScenarioId={hoveredScenarioId}
+                  onScenarioHover={handleScenarioHover}
                   scenarioColorScale={scenarioColorScale}
               />
             </TabsContent>
@@ -381,7 +383,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header>
+      <Header onExport={handleExportData} onImport={handleImportData} disabled={!activeGraphId}>
         {hasMounted && (
             <TabBar
                 graphs={graphs}
