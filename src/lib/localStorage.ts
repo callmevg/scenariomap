@@ -17,7 +17,7 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
         scenarios.forEach(scenario => {
             const seenMethods = new Set<string>();
             scenario.methods = scenario.methods.filter(method => {
-                const methodKey = JSON.stringify(method.sort()); // Sort to treat ['1','2'] and ['2','1'] as same *path*
+                const methodKey = JSON.stringify(method); // Don't sort, sequence matters
                 if (seenMethods.has(methodKey)) {
                     return false;
                 }
@@ -30,7 +30,7 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
         const methodToScenariosMap = new Map<string, string[]>();
         scenarios.forEach(scenario => {
             scenario.methods.forEach(method => {
-                const methodKey = JSON.stringify(method.sort());
+                const methodKey = JSON.stringify(method); // Key is the exact sequence
                 if (!methodToScenariosMap.has(methodKey)) {
                     methodToScenariosMap.set(methodKey, []);
                 }
@@ -48,21 +48,20 @@ const deduplicateData = (graphs: Record<string, GraphData>): Record<string, Grap
                 const otherScenarios = scenariosWithMethod.slice(1);
 
                 otherScenarios.forEach(otherScenario => {
-                    const originalMethod = JSON.parse(methodKey);
-                    otherScenario.methods = otherScenario.methods.filter(m => JSON.stringify(m.sort()) !== methodKey);
+                    otherScenario.methods = otherScenario.methods.filter(m => JSON.stringify(m) !== methodKey);
                 });
             }
         });
         
-        // Remove scenarios that became empty
+        // Remove scenarios that became empty after method removal
         scenarios = scenarios.filter(s => s.methods.length > 0);
 
 
         // --- 3. De-duplicate entire scenarios ---
         const scenarioToIdsMap = new Map<string, string[]>();
         scenarios.forEach(scenario => {
-            // A scenario's signature is its sorted list of sorted methods
-            const scenarioKey = JSON.stringify(scenario.methods.map(m => [...m].sort()).sort());
+            // A scenario's signature is its stringified, sorted list of methods
+            const scenarioKey = JSON.stringify(scenario.methods.map(m => JSON.stringify(m)).sort());
             if (!scenarioToIdsMap.has(scenarioKey)) {
                 scenarioToIdsMap.set(scenarioKey, []);
             }
