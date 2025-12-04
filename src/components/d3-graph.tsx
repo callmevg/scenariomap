@@ -6,6 +6,8 @@ import * as d3 from 'd3';
 import type { UIElement, UIScenario } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
+const sanitizeId = (id: string) => id.replace(/[.\s]/g, '-');
+
 interface D3GraphProps {
   elements: UIElement[];
   scenarios: UIScenario[];
@@ -14,8 +16,6 @@ interface D3GraphProps {
   onScenarioHover: (scenarioId: string | null) => void;
   scenarioColorScale: d3.ScaleOrdinal<string, string, never>;
 }
-
-const sanitizeId = (id: string) => id.replace(/[.\s]/g, '-');
 
 const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hoveredScenarioId, onScenarioHover, scenarioColorScale }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -53,7 +53,8 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
   useEffect(() => {
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
-    const allNodes = svg.selectAll<SVGCircleElement, UIElement>('.node-circle');
+    const allNodes = svg.selectAll('.node-group');
+    const allLinks = svg.selectAll('.link-path');
 
     if (hoveredScenarioId) {
         const hoveredScenario = validScenarios.find(f => f.id === hoveredScenarioId);
@@ -62,34 +63,47 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
         }
 
         const hoveredElementIds = new Set(hoveredScenario.methods.flat());
+        const hoveredScenarioSelector = `.scenario-${sanitizeId(hoveredScenarioId)}`;
+        
+        // Lower opacity for non-hovered elements
+        allLinks.attr('stroke-opacity', 0.1);
+        allNodes.style('opacity', 0.5);
 
-        svg.selectAll('.link').attr('stroke-opacity', 0.1);
-        svg.selectAll(`.scenario-${sanitizeId(hoveredScenarioId)}`).attr('stroke-opacity', 1).attr('stroke-width', 3);
+        // Highlight hovered scenario
+        const hoveredLinks = svg.selectAll(hoveredScenarioSelector);
+        hoveredLinks.attr('stroke-opacity', 1).attr('stroke-width', 3);
+        
         svg.selectAll('marker').style('visibility', 'hidden');
         svg.select(`#arrow-${sanitizeId(hoveredScenarioId)}`).style('visibility', 'visible');
         
-        allNodes
+        allNodes.selectAll('.node-circle')
             .attr('stroke', d => {
                 if (hoveredElementIds.has(d.id)) {
-                    // If it's in the scenario, highlight it. If it's also buggy, use a stronger highlight.
                     return d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--primary))';
                 }
-                // If not in scenario, use a neutral border color
                 return 'hsl(var(--border))';
             })
             .attr('stroke-width', d => {
                  if (hoveredElementIds.has(d.id)) {
                     return d.isBuggy ? 4 : 3;
                  }
-                 return 2; // Default stroke for non-highlighted
+                 return 2;
             });
 
+        // Raise hovered nodes and links to be on top
+        const hoveredNodeGroups = allNodes.filter(d => hoveredElementIds.has((d as UIElement).id));
+        hoveredNodeGroups.style('opacity', 1).raise();
+        hoveredLinks.raise();
+
+
     } else {
-        svg.selectAll('.link').attr('stroke-opacity', 0.7).attr('stroke-width', 2);
+        // Reset all styles
+        allLinks.attr('stroke-opacity', 0.7).attr('stroke-width', 2);
+        allNodes.style('opacity', 1);
         svg.selectAll('marker').style('visibility', 'visible');
-        allNodes
-            .attr('stroke', d => d.isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
-            .attr('stroke-width', d => d.isBuggy ? 4 : 2);
+        allNodes.selectAll('.node-circle')
+            .attr('stroke', d => (d as UIElement).isBuggy ? 'hsl(var(--destructive))' : 'hsl(var(--border))')
+            .attr('stroke-width', d => (d as UIElement).isBuggy ? 4 : 2);
     }
   }, [hoveredScenarioId, validScenarios]);
 
@@ -186,12 +200,14 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
     const simulation = simulationRef.current;
 
     const link = container.append('g')
+      .attr('class', 'links-group')
       .selectAll('g')
       .data(links)
-      .join('g');
+      .join('g')
+      .attr('class', 'link');
 
     link.append('path')
-      .attr('class', d => `link scenario-${sanitizeId(d.scenarioId)}`)
+      .attr('class', d => `link-path scenario-${sanitizeId(d.scenarioId)}`)
       .attr('stroke-width', 2)
       .attr('stroke', d => scenarioColorScale(d.scenarioId))
       .attr('stroke-opacity', 0.7)
@@ -209,10 +225,11 @@ const D3Graph: React.FC<D3GraphProps> = ({ elements, scenarios, onNodeClick, hov
 
 
     const node = container.append('g')
+      .attr('class', 'nodes-group')
       .selectAll('g')
       .data(nodes)
       .join('g')
-      .attr('class', 'cursor-pointer')
+      .attr('class', 'node-group cursor-pointer')
       .call(drag(simulation, onNodeClick));
 
     node.append('circle')
