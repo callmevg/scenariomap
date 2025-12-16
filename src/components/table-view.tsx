@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { UIElement, UIScenario } from '@/lib/types';
 import { Checkbox } from './ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, BarChart3, Bug, CheckCircle, AlertTriangle, Layers, FileText } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 
 // Resizable Table Header Component
@@ -187,9 +187,116 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
         setEditableScenarios(prev => [...prev, newScenario]);
     };
 
+    // Dashboard metrics calculations
+    const metrics = useMemo(() => {
+        const totalElements = elements.length;
+        const buggyElements = elements.filter(el => el.isBuggy).length;
+        const healthyElements = totalElements - buggyElements;
+        const bugPercentage = totalElements > 0 ? ((buggyElements / totalElements) * 100).toFixed(1) : '0.0';
+        
+        const totalScenarios = scenarios.length;
+        const totalMethods = scenarios.reduce((sum, s) => sum + (s.methods?.length || 0), 0);
+        
+        // Get set of buggy element IDs
+        const buggyElementIds = new Set(elements.filter(el => el.isBuggy).map(el => el.id));
+        const buggyElementNames = new Set(elements.filter(el => el.isBuggy).map(el => el.name.toLowerCase()));
+        
+        // Count impacted scenarios (scenarios containing at least one buggy element)
+        const impactedScenarios = scenarios.filter(scenario => {
+            return scenario.methods?.some(method => 
+                method.some(elementRef => 
+                    buggyElementIds.has(elementRef) || buggyElementNames.has(elementRef.toLowerCase())
+                )
+            );
+        }).length;
+
+        return {
+            totalElements,
+            buggyElements,
+            healthyElements,
+            bugPercentage,
+            totalScenarios,
+            totalMethods,
+            impactedScenarios
+        };
+    }, [elements, scenarios]);
 
     return (
         <div className="space-y-2">
+            {/* Dashboard Metrics */}
+            <Card className="shadow-none">
+                <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Dashboard Metrics
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                        {/* Total Scenarios */}
+                        <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <Layers className="h-3 w-3" />
+                                <span className="text-xs">Scenarios</span>
+                            </div>
+                            <p className="text-2xl font-bold">{metrics.totalScenarios}</p>
+                        </div>
+                        
+                        {/* Total Methods */}
+                        <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <FileText className="h-3 w-3" />
+                                <span className="text-xs">Methods</span>
+                            </div>
+                            <p className="text-2xl font-bold">{metrics.totalMethods}</p>
+                        </div>
+                        
+                        {/* Total Elements */}
+                        <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                                <span className="text-xs">Total Elements</span>
+                            </div>
+                            <p className="text-2xl font-bold">{metrics.totalElements}</p>
+                        </div>
+                        
+                        {/* Healthy Elements */}
+                        <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-green-600 dark:text-green-400 mb-1">
+                                <CheckCircle className="h-3 w-3" />
+                                <span className="text-xs">Healthy</span>
+                            </div>
+                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{metrics.healthyElements}</p>
+                        </div>
+                        
+                        {/* Buggy Elements */}
+                        <div className="bg-red-500/10 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-red-600 dark:text-red-400 mb-1">
+                                <Bug className="h-3 w-3" />
+                                <span className="text-xs">Buggy</span>
+                            </div>
+                            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{metrics.buggyElements}</p>
+                        </div>
+                        
+                        {/* Bug Percentage */}
+                        <div className="bg-orange-500/10 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-orange-600 dark:text-orange-400 mb-1">
+                                <span className="text-xs">Bug %</span>
+                            </div>
+                            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{metrics.bugPercentage}%</p>
+                        </div>
+                        
+                        {/* Impacted Scenarios */}
+                        <div className="bg-amber-500/10 rounded-lg p-3 text-center">
+                            <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 mb-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                <span className="text-xs">Impacted</span>
+                            </div>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{metrics.impactedScenarios}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card className="shadow-none">
                 <CardHeader className="py-2 px-3">
                     <CardTitle className="text-sm">Elements</CardTitle>

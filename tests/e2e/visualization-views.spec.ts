@@ -98,6 +98,20 @@ test.describe('Visualization Views', () => {
       await expect(table).toBeVisible();
     });
 
+    test('should display dashboard metrics', async ({ page }) => {
+      // Verify dashboard metrics section is visible
+      await expect(page.getByText('Dashboard Metrics')).toBeVisible();
+      
+      // Check for key metric labels
+      await expect(page.getByText('Scenarios').first()).toBeVisible();
+      await expect(page.getByText('Methods').first()).toBeVisible();
+      await expect(page.getByText('Total Elements')).toBeVisible();
+      await expect(page.getByText('Healthy')).toBeVisible();
+      await expect(page.getByText('Buggy').first()).toBeVisible();
+      await expect(page.getByText('Bug %')).toBeVisible();
+      await expect(page.getByText('Impacted')).toBeVisible();
+    });
+
     test('should display elements table', async ({ page }) => {
       // Verify table headers
       await expect(page.getByRole('columnheader', { name: 'Name' }).first()).toBeVisible();
