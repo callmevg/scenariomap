@@ -25,13 +25,14 @@ The project uses **Playwright** for comprehensive end-to-end testing across 3 br
 | File | Coverage | Test Count |
 |------|----------|------------|
 | `element-management.spec.ts` | Element CRUD, validation, bug status | 7 |
-| `scenario-management.spec.ts` | Scenario CRUD, methods, grouping, visibility | 11 |
-| `multi-graph-workspace.spec.ts` | Tab management, graph isolation, persistence | 9 |
-| `visualization-views.spec.ts` | D3 Graph, Metro Map, Table View interactions | 19 |
-| `data-portability.spec.ts` | Import/Export, duplicates, data integrity | 6 |
-| `ui-ux-theme.spec.ts` | Theme switching, modals, toasts, accessibility | 13 |
+| `scenario-management.spec.ts` | Scenario CRUD, methods, grouping, visibility | 8 |
+| `multi-graph-workspace.spec.ts` | Tab management, graph isolation, persistence | 8 |
+| `visualization-views.spec.ts` | D3 Graph, Metro Map, Table View interactions | 12 |
+| `data-portability.spec.ts` | Import/Export, duplicates, data integrity | 7 |
+| `ui-ux-theme.spec.ts` | Theme switching, modals, toasts, accessibility | 14 |
+| `file-storage.spec.ts` | Save/Open to server, file listing, deletion | 10 |
 
-**Total: 65 E2E tests**
+**Total: 66 E2E tests**
 
 #### Test Commands
 ```bash

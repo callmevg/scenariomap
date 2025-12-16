@@ -6,7 +6,9 @@ The application supports multiple independent workspaces (Graphs).
 - **Tabs Interface**: Users navigate between graphs using a tab bar in the header.
 - **Create Graph**: Users can add new empty graphs.
 - **Rename Graph**: Double-clicking a tab allows renaming the graph.
-- **Delete Graph**: Users can delete a graph (with confirmation). The system prevents deleting the last remaining graph.
+- **Close Tab**: Closing a tab removes it from view but preserves the graph data (non-destructive). The graph can be reopened via the Open dialog.
+- **Delete Graph**: Users can permanently delete a graph via the Open file dialog (with confirmation).
+- **Last Tab Protection**: The system prevents closing the last remaining tab.
 
 ## 2. Element Management
 Elements are the nodes in the graph, representing UI states.
@@ -47,6 +49,25 @@ Scenarios are the edges/paths in the graph, representing user flows.
     - **Scenario Merge**: Imported scenarios are added only if no scenario with the same name exists.
     - **Backward Compatibility**: Supports legacy formats (`paths`, `elementIds`, `flows`).
 
-## 5. Sample Data & Migration
+## 5. File Storage (Save/Open)
+The application supports server-side file persistence for graphs.
+
+- **Save to File**:
+    - Users can save the current graph to a server-side JSON file.
+    - File naming: User provides a filename, stored as `{filename}.json` in `data/graphs/`.
+    - Saving updates existing files or creates new ones.
+- **Open from File**:
+    - Users can browse saved files via the Open dialog.
+    - Files are listed with names and last modified timestamps.
+    - Opening a file loads the graph into a new tab.
+- **Delete File**:
+    - Users can delete saved files directly from the Open dialog (with confirmation).
+- **API Endpoints**:
+    - `GET /api/files` - List all saved files.
+    - `GET /api/files?filename=X` - Read specific file.
+    - `POST /api/files` - Save/update a file.
+    - `DELETE /api/files?filename=X` - Delete a file.
+
+## 6. Sample Data & Migration
 - **First Run**: If no data exists, sample data is auto-generated with 5 elements and 3 scenarios.
 - **Legacy Migration**: Automatically migrates data from old keys (`flowverse-elements`, `flowverse-flows`) to new format.

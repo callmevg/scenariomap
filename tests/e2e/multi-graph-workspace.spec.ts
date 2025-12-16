@@ -87,6 +87,16 @@ test.describe('Multi-Graph Workspace', () => {
     
     // The Untitled Graph tab should now be active
     await expect(tabBar.locator('span', { hasText: 'Untitled Graph' })).toBeVisible();
+    
+    // Data should still be preserved in localStorage (can verify by checking localStorage)
+    const graphData = await page.evaluate(() => {
+      const data = localStorage.getItem('scenario-map-data');
+      return data ? JSON.parse(data) : null;
+    });
+    
+    // Sample Graph should still exist in the data
+    const graphNames = graphData ? Object.values(graphData).map((g: any) => g.name) : [];
+    expect(graphNames).toContain('Sample Graph');
   });
 
   test('should prevent closing the last graph tab', async ({ page }) => {
