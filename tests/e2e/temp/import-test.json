@@ -1,0 +1,1 @@
+{"name":"Imported Graph","elements":[{"id":"import-1","name":"Imported Element 1","isBuggy":false},{"id":"import-2","name":"Imported Element 2","isBuggy":true,"bugDetails":"Test bug"}],"scenarios":[{"id":"scenario-1","name":"Imported Scenario","group":"Test","methods":[["import-1","import-2"]]}]}

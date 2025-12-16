@@ -1,0 +1,34 @@
+{
+  "name": "Imported Graph",
+  "elements": [
+    {
+      "id": "import-1",
+      "name": "Imported Element 1",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-15T10:30:12.706Z"
+    },
+    {
+      "id": "import-2",
+      "name": "Imported Element 2",
+      "isBuggy": true,
+      "bugDetails": "Import test bug",
+      "mediaLink": "",
+      "createdAt": "2025-12-15T10:30:12.708Z"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "import-scenario-1",
+      "name": "Imported Scenario",
+      "methods": [
+        [
+          "import-1",
+          "import-2"
+        ]
+      ],
+      "group": "Imported"
+    }
+  ]
+}

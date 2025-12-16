@@ -1,0 +1,22 @@
+{
+  "name": "Test",
+  "elements": [],
+  "scenarios": [
+    {
+      "id": "duplicate-scenario",
+      "name": "User Login",
+      "methods": [
+        []
+      ],
+      "group": "Test"
+    },
+    {
+      "id": "new-scenario",
+      "name": "Unique Scenario",
+      "methods": [
+        []
+      ],
+      "group": "Test"
+    }
+  ]
+}

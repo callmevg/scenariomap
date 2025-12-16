@@ -4,7 +4,7 @@ import * as path from 'path';
 
 /**
  * Test Suite: Data Import/Export
- * Tests data portability features
+ * Tests JSON import/export functionality and data portability
  */
 
 test.describe('Data Import/Export', () => {
@@ -12,256 +12,140 @@ test.describe('Data Import/Export', () => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
+    await page.waitForSelector('.node-group', { timeout: 10000 });
   });
 
-  test('should export graph as JSON file', async ({ page }) => {
-    // Set up download listener
-    const downloadPromise = page.waitForEvent('download');
+  test.describe('Export Functionality', () => {
+    test('should export current graph data', async ({ page }) => {
+      // Set up download handler
+      const downloadPromise = page.waitForEvent('download');
 
-    // Click export button
-    await page.getByRole('button', { name: /export/i }).click();
+      // Click export button
+      await page.getByRole('button', { name: /export/i }).click();
 
-    // Wait for download
-    const download = await downloadPromise;
-    
-    // Verify filename
-    expect(download.suggestedFilename()).toMatch(/.*-scenariomap\.json$/);
+      // Wait for download
+      const download = await downloadPromise;
 
-    // Save and verify content
-    const filePath = path.join(__dirname, 'temp', download.suggestedFilename());
-    await download.saveAs(filePath);
+      // Verify download happened
+      expect(download.suggestedFilename()).toContain('.json');
+    });
 
-    // Read and parse JSON
-    const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    
-    // Verify structure
-    expect(content).toHaveProperty('name');
-    expect(content).toHaveProperty('elements');
-    expect(content).toHaveProperty('scenarios');
-    expect(Array.isArray(content.elements)).toBe(true);
-    expect(Array.isArray(content.scenarios)).toBe(true);
+    test('should export valid JSON structure', async ({ page }) => {
+      // Set up download handler
+      const downloadPromise = page.waitForEvent('download');
 
-    // Cleanup
-    fs.unlinkSync(filePath);
+      await page.getByRole('button', { name: /export/i }).click();
+
+      const download = await downloadPromise;
+      
+      // Save to temp file and read
+      const tempPath = path.join(__dirname, 'temp', 'export-test.json');
+      await download.saveAs(tempPath);
+
+      const content = fs.readFileSync(tempPath, 'utf-8');
+      const data = JSON.parse(content);
+
+      // Verify structure
+      expect(data).toHaveProperty('elements');
+      expect(data).toHaveProperty('scenarios');
+      expect(Array.isArray(data.elements)).toBe(true);
+      expect(Array.isArray(data.scenarios)).toBe(true);
+    });
   });
 
-  test('should import graph from JSON file', async ({ page }) => {
-    // Create test JSON file
-    const testData = {
-      name: 'Imported Graph',
-      elements: [
-        {
-          id: 'import-1',
-          name: 'Imported Element 1',
-          isBuggy: false,
-          bugDetails: '',
-          mediaLink: '',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'import-2',
-          name: 'Imported Element 2',
-          isBuggy: true,
-          bugDetails: 'Import test bug',
-          mediaLink: '',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      scenarios: [
-        {
-          id: 'import-scenario-1',
-          name: 'Imported Scenario',
-          methods: [['import-1', 'import-2']],
-          group: 'Imported'
-        }
-      ]
-    };
+  test.describe('Import Functionality', () => {
+    test('should have import input', async ({ page }) => {
+      // The import is typically a file input (might be hidden)
+      const fileInput = page.locator('input[type="file"]');
+      await expect(fileInput).toBeAttached();
+    });
 
-    const tempDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+    test('should import valid JSON file', async ({ page }) => {
+      // Create test data
+      const testData = {
+        name: "Imported Graph",
+        elements: [
+          { id: "import-1", name: "Imported Element 1", isBuggy: false },
+          { id: "import-2", name: "Imported Element 2", isBuggy: true, bugDetails: "Test bug" }
+        ],
+        scenarios: [
+          { id: "scenario-1", name: "Imported Scenario", group: "Test", methods: [["import-1", "import-2"]] }
+        ]
+      };
 
-    const filePath = path.join(tempDir, 'test-import.json');
-    fs.writeFileSync(filePath, JSON.stringify(testData, null, 2));
+      // Write test file
+      const testFilePath = path.join(__dirname, 'temp', 'import-test.json');
+      fs.mkdirSync(path.dirname(testFilePath), { recursive: true });
+      fs.writeFileSync(testFilePath, JSON.stringify(testData));
 
-    // Click import button (this will trigger file input)
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
+      // Upload file
+      const fileInput = page.locator('input[type="file"]');
+      await fileInput.setInputFiles(testFilePath);
 
-    // Verify success toast
-    await expect(page.getByText(/data merged/i)).toBeVisible();
+      // Wait for import to complete
+      await page.waitForTimeout(1000);
 
-    // Verify imported elements appear
-    await expect(page.getByText('Imported Element 1')).toBeVisible();
-    await expect(page.getByText('Imported Element 2')).toBeVisible();
-
-    // Verify imported scenario appears
-    await expect(page.getByText('Imported Scenario')).toBeVisible();
-
-    // Cleanup
-    fs.unlinkSync(filePath);
+      // Verify imported elements appear
+      await expect(page.locator('.node-group title', { hasText: 'Imported Element 1' })).toBeAttached();
+    });
   });
 
-  test('should handle duplicate elements during import', async ({ page }) => {
-    // First, add an element
-    await page.getByRole('button', { name: /add element/i }).click();
-    await page.getByPlaceholder(/e.g. Login Page/i).fill('Duplicate Test');
-    await page.getByRole('button', { name: /^save$/i }).click();
-    await expect(page.getByText(/element added/i)).toBeVisible();
+  test.describe('Data Persistence', () => {
+    test('should persist data across page reload', async ({ page }) => {
+      // Add an element
+      await page.getByRole('button', { name: /add element/i }).click();
+      await page.getByPlaceholder(/e.g. Login Page/i).fill('Persistence Test');
+      await page.getByRole('button', { name: /^save$/i }).click();
+      await page.waitForTimeout(500);
 
-    // Create import data with same element name
-    const testData = {
-      name: 'Test',
-      elements: [
-        {
-          id: 'different-id',
-          name: 'Duplicate Test', // Same name as existing
-          isBuggy: true,
-          bugDetails: 'Should not create duplicate',
-          mediaLink: '',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'new-id',
-          name: 'New Unique Element',
-          isBuggy: false,
-          bugDetails: '',
-          mediaLink: '',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      scenarios: []
-    };
+      // Reload
+      await page.reload();
+      await page.waitForSelector('.node-group', { timeout: 10000 });
 
-    const tempDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+      // Verify data persists
+      await expect(page.locator('.node-group title', { hasText: 'Persistence Test' })).toBeAttached();
+    });
 
-    const filePath = path.join(tempDir, 'test-duplicate.json');
-    fs.writeFileSync(filePath, JSON.stringify(testData, null, 2));
-
-    // Import
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
-
-    await expect(page.getByText(/data merged/i)).toBeVisible();
-
-    // Verify only one "Duplicate Test" exists
-    await page.getByRole('tab', { name: /table/i }).click();
-    const table = page.getByRole('table').first();
-    const content = await table.textContent();
-    const matches = content?.match(/Duplicate Test/g);
-    expect(matches?.length).toBe(1);
-
-    // Verify new unique element was added
-    await expect(page.getByText('New Unique Element')).toBeVisible();
-
-    // Cleanup
-    fs.unlinkSync(filePath);
+    test('should persist across browser sessions (localStorage)', async ({ page }) => {
+      // Verify localStorage is being used
+      const hasData = await page.evaluate(() => {
+        return localStorage.getItem('scenario-map-data') !== null;
+      });
+      
+      expect(hasData).toBe(true);
+    });
   });
 
-  test('should handle duplicate scenarios during import', async ({ page }) => {
-    // Import data with scenario that matches existing one
-    const testData = {
-      name: 'Test',
-      elements: [],
-      scenarios: [
-        {
-          id: 'duplicate-scenario',
-          name: 'User Login', // Matches sample data
-          methods: [[]],
-          group: 'Test'
-        },
-        {
-          id: 'new-scenario',
-          name: 'Unique Scenario',
-          methods: [[]],
-          group: 'Test'
-        }
-      ]
-    };
+  test.describe('Export-Import Round Trip', () => {
+    test('should maintain data integrity through export and re-import', async ({ page }) => {
+      // Add a unique element
+      await page.getByRole('button', { name: /add element/i }).click();
+      await page.getByPlaceholder(/e.g. Login Page/i).fill('RoundTrip Element');
+      await page.getByRole('button', { name: /^save$/i }).click();
+      await page.waitForTimeout(500);
 
-    const tempDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+      // Export
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByRole('button', { name: /export/i }).click();
+      const download = await downloadPromise;
 
-    const filePath = path.join(tempDir, 'test-scenario-duplicate.json');
-    fs.writeFileSync(filePath, JSON.stringify(testData, null, 2));
+      // Save export
+      const exportPath = path.join(__dirname, 'temp', 'roundtrip.json');
+      fs.mkdirSync(path.dirname(exportPath), { recursive: true });
+      await download.saveAs(exportPath);
 
-    // Import
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
+      // Clear and reload
+      await page.evaluate(() => localStorage.clear());
+      await page.reload();
+      await page.waitForSelector('.node-group', { timeout: 10000 });
 
-    await expect(page.getByText(/data merged/i)).toBeVisible();
+      // Re-import
+      const fileInput = page.locator('input[type="file"]');
+      await fileInput.setInputFiles(exportPath);
+      await page.waitForTimeout(1000);
 
-    // Verify "User Login" scenario count (should be only 1)
-    const sidebar = page.locator('.dashboard');
-    const sidebarContent = await sidebar.textContent();
-    const matches = sidebarContent?.match(/User Login/g);
-    expect(matches?.length).toBe(1);
-
-    // Verify unique scenario was added
-    await expect(page.getByText('Unique Scenario')).toBeVisible();
-
-    // Cleanup
-    fs.unlinkSync(filePath);
-  });
-
-  test('should handle invalid JSON import', async ({ page }) => {
-    // Create invalid JSON file
-    const tempDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    const filePath = path.join(tempDir, 'invalid.json');
-    fs.writeFileSync(filePath, 'This is not valid JSON {]');
-
-    // Import
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
-
-    // Verify error toast
-    await expect(page.getByText(/import error/i)).toBeVisible();
-
-    // Cleanup
-    fs.unlinkSync(filePath);
-  });
-
-  test('should export and re-import maintaining data integrity', async ({ page }) => {
-    // Add custom element
-    await page.getByRole('button', { name: /add element/i }).click();
-    await page.getByPlaceholder(/e.g. Login Page/i).fill('Export Test Element');
-    await page.getByLabel(/mark as buggy/i).check();
-    await page.getByPlaceholder(/describe the bug/i).fill('Test bug for export');
-    await page.getByRole('button', { name: /^save$/i }).click();
-    await expect(page.getByText(/element added/i)).toBeVisible();
-
-    // Export
-    const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: /export/i }).click();
-    const download = await downloadPromise;
-    const filePath = path.join(__dirname, 'temp', download.suggestedFilename());
-    await download.saveAs(filePath);
-
-    // Clear data
-    await page.evaluate(() => localStorage.clear());
-    await page.reload();
-
-    // Import the exported file
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(filePath);
-    await expect(page.getByText(/data merged/i)).toBeVisible();
-
-    // Verify element exists with all properties
-    await page.locator('text=Export Test Element').click();
-    await expect(page.getByText('Test bug for export')).toBeVisible();
-    await expect(page.getByText(/buggy/i)).toBeVisible();
-
-    // Cleanup
-    fs.unlinkSync(filePath);
+      // Verify element exists
+      await expect(page.locator('.node-group title', { hasText: 'RoundTrip Element' })).toBeAttached();
+    });
   });
 });

@@ -1,0 +1,22 @@
+{
+  "name": "Test",
+  "elements": [
+    {
+      "id": "different-id",
+      "name": "Duplicate Test",
+      "isBuggy": true,
+      "bugDetails": "Should not create duplicate",
+      "mediaLink": "",
+      "createdAt": "2025-12-15T10:30:17.079Z"
+    },
+    {
+      "id": "new-id",
+      "name": "New Unique Element",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-15T10:30:17.081Z"
+    }
+  ],
+  "scenarios": []
+}
