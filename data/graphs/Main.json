@@ -1,0 +1,2295 @@
+{
+  "name": "My First Graph",
+  "elements": [
+    {
+      "id": "17627505106460.8214344697477495",
+      "name": "Decompressing folders",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.33619738998446835",
+      "name": "Select file(s) or folder(s)",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.3689913573598047",
+      "name": "Copy dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.5606805719143654",
+      "name": "Duplicate file dialog (minified)",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.4917888250697845",
+      "name": "Duplicate file dialog (expanded)",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.6937290746525375",
+      "name": "Delete dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.3073222054247877",
+      "name": "Restore dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "id": "17627505106460.6277512756653373",
+      "name": "Zipping/ compressing confirmation dialog",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI, does not support dark mode",
+      "mediaLink": "",
+      "createdAt": {}
+    },
+    {
+      "name": "Right click menu on file/ folder",
+      "isBuggy": true,
+      "bugDetails": "* In some screens, the menu extends to complete height of screen (too many options)\n* AI actions take too long to load  ",
+      "mediaLink": "",
+      "id": "17627505106460.6729233573935722",
+      "createdAt": {}
+    },
+    {
+      "name": "Zipping dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.23986377641138312",
+      "createdAt": {}
+    },
+    {
+      "name": "File properties",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI, does not support dark mode",
+      "mediaLink": "",
+      "id": "17627505106460.930272042294778",
+      "createdAt": {}
+    },
+    {
+      "name": "File preview pane",
+      "isBuggy": true,
+      "bugDetails": "Old yellow message bar if the file size is greater than 50KB",
+      "mediaLink": "",
+      "id": "17627505106460.20871113528760632",
+      "createdAt": {}
+    },
+    {
+      "name": "Right click menu in recycle bin",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6804706405298933",
+      "createdAt": {}
+    },
+    {
+      "name": "[Folder options] FE > ... > Options",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI, does not support dark mode",
+      "mediaLink": "",
+      "id": "17627505106460.8042933152667192",
+      "createdAt": {}
+    },
+    {
+      "name": "Right click menu > Show more options",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI",
+      "mediaLink": "",
+      "id": "17627505106460.9455556356600051",
+      "createdAt": {}
+    },
+    {
+      "name": "Create shortcut",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.38527981810404544",
+      "createdAt": {}
+    },
+    {
+      "name": "Copy/ Cut",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6261763800340369",
+      "createdAt": {}
+    },
+    {
+      "name": "Paste",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.4928128477250717",
+      "createdAt": {}
+    },
+    {
+      "name": "Rename",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.10828998912660359",
+      "createdAt": {}
+    },
+    {
+      "name": "Launch FE",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.4416846132409372",
+      "createdAt": {}
+    },
+    {
+      "name": "File Explorer search bar",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2690004326720562",
+      "createdAt": {}
+    },
+    {
+      "name": "File Explorer search bar > Enter query",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3536624234521665",
+      "createdAt": {}
+    },
+    {
+      "name": "Search results page",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.04278076656744345",
+      "createdAt": {}
+    },
+    {
+      "name": "FE > View > Preview pane/ Details pane",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.24080436577652664",
+      "createdAt": {}
+    },
+    {
+      "name": "Ctrl+C/X",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.18114246103815923",
+      "createdAt": {}
+    },
+    {
+      "name": "Right click in FE",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3868800927604922",
+      "createdAt": {}
+    },
+    {
+      "name": "Ctrl+V",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.14941852310884018",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Installation USB/Media",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3975588234835701",
+      "createdAt": {}
+    },
+    {
+      "name": "Boot from USB",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8738696110447851",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Setup Screen",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5407794937552387",
+      "createdAt": {}
+    },
+    {
+      "name": "Product Key Entry Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7698364932171466",
+      "createdAt": {}
+    },
+    {
+      "name": "Settings > System > Activation",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2394798333592415",
+      "createdAt": {}
+    },
+    {
+      "name": "Command Prompt (Admin)",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.44454116075851113",
+      "createdAt": {}
+    },
+    {
+      "name": "Microsoft Account Sign-in Screen",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6145355486404045",
+      "createdAt": {}
+    },
+    {
+      "name": "Settings > Accounts > Windows Backup",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7977360639039872",
+      "createdAt": {}
+    },
+    {
+      "name": "OneDrive Sync Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8283473874414996",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Hello Setup Screen",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.36877087052782476",
+      "createdAt": {}
+    },
+    {
+      "name": "PIN Setup Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9876871661690692",
+      "createdAt": {}
+    },
+    {
+      "name": "Biometric Setup (Face/Fingerprint)",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7920542249823215",
+      "createdAt": {}
+    },
+    {
+      "name": "Microsoft Store App",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2592706029583234",
+      "createdAt": {}
+    },
+    {
+      "name": "App Installation Progress",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.913993046329158",
+      "createdAt": {}
+    },
+    {
+      "name": "Device Manager",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5469480937470305",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Update Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.32974698468346864",
+      "createdAt": {}
+    },
+    {
+      "name": "Bluetooth Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.024986608906031105",
+      "createdAt": {}
+    },
+    {
+      "name": "Add Device Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5617875893925612",
+      "createdAt": {}
+    },
+    {
+      "name": "Display Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6500716432339475",
+      "createdAt": {}
+    },
+    {
+      "name": "Network & Internet Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8227213598577158",
+      "createdAt": {}
+    },
+    {
+      "name": "Wi-Fi Network Selection",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7431062212177326",
+      "createdAt": {}
+    },
+    {
+      "name": "VPN Connection Setup",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.899735157823365",
+      "createdAt": {}
+    },
+    {
+      "name": "Accessibility Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7459688068463297",
+      "createdAt": {}
+    },
+    {
+      "name": "Narrator Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.06370070992187638",
+      "createdAt": {}
+    },
+    {
+      "name": "Magnifier Tool",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5705143495944361",
+      "createdAt": {}
+    },
+    {
+      "name": "Personalization Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2992571363571872",
+      "createdAt": {}
+    },
+    {
+      "name": "Theme Selection",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7062283057496785",
+      "createdAt": {}
+    },
+    {
+      "name": "Wallpaper Selection",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.657047309161967",
+      "createdAt": {}
+    },
+    {
+      "name": "Desktop Right-click Menu",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9739155646778521",
+      "createdAt": {}
+    },
+    {
+      "name": "Disk Management Tool",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.04580966889035176",
+      "createdAt": {}
+    },
+    {
+      "name": "BitLocker Encryption Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3039703067482794",
+      "createdAt": {}
+    },
+    {
+      "name": "Format Drive Dialog",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI, does not support dark mode",
+      "mediaLink": "",
+      "id": "17627505106460.4275622568644246",
+      "createdAt": {}
+    },
+    {
+      "name": "Task Manager",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8316382115052259",
+      "createdAt": {}
+    },
+    {
+      "name": "Startup Apps Management",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5112713852149057",
+      "createdAt": {}
+    },
+    {
+      "name": "Storage Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6324863396260363",
+      "createdAt": {}
+    },
+    {
+      "name": "Disk Cleanup Tool",
+      "isBuggy": true,
+      "bugDetails": "Outdated UI, does not support dark mode",
+      "mediaLink": "",
+      "id": "17627505106460.3680104600458577",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Security Center",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.11396990853642675",
+      "createdAt": {}
+    },
+    {
+      "name": "Windows Defender Scan",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.38621939801607363",
+      "createdAt": {}
+    },
+    {
+      "name": "Firewall Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2250660985877666",
+      "createdAt": {}
+    },
+    {
+      "name": "System Recovery Options",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.01188651858043821",
+      "createdAt": {}
+    },
+    {
+      "name": "System Backup Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.08809294370132059",
+      "createdAt": {}
+    },
+    {
+      "name": "Power Options",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5117512450189494",
+      "createdAt": {}
+    },
+    {
+      "name": "Lock Screen",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.08350092216182192",
+      "createdAt": {}
+    },
+    {
+      "name": "User Switch Menu",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8127150863513434",
+      "createdAt": {}
+    },
+    {
+      "name": "Password Change Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5440016156892082",
+      "createdAt": {}
+    },
+    {
+      "name": "Apps & Features Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.038752475124363084",
+      "createdAt": {}
+    },
+    {
+      "name": "Uninstall Confirmation Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.40163050800241706",
+      "createdAt": {}
+    },
+    {
+      "name": "Night Light Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.8788108303040755",
+      "createdAt": {}
+    },
+    {
+      "name": "Time & Language Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.2519310444298558",
+      "createdAt": {}
+    },
+    {
+      "name": "Sound Settings",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7819569598236034",
+      "createdAt": {}
+    },
+    {
+      "name": "Snipping Tool",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.6358680923455968",
+      "createdAt": {}
+    },
+    {
+      "name": "Notepad Application",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9760583132607861",
+      "createdAt": {}
+    },
+    {
+      "name": "Paint Application",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3150786216108856",
+      "createdAt": {}
+    },
+    {
+      "name": "Photos App",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.32148110644409944",
+      "createdAt": {}
+    },
+    {
+      "name": "Camera App",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.5425240686021854",
+      "createdAt": {}
+    },
+    {
+      "name": "Voice Recorder App",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3603970262308107",
+      "createdAt": {}
+    },
+    {
+      "name": "Sticky Notes App",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.92382088064878",
+      "createdAt": {}
+    },
+    {
+      "name": "Microsoft Copilot",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.20305115160236353",
+      "createdAt": {}
+    },
+    {
+      "name": "Web Browser",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.044590691538438976",
+      "createdAt": {}
+    },
+    {
+      "name": "Email Client",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.21658373618895843",
+      "createdAt": {}
+    },
+    {
+      "name": "Microsoft Teams",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.4234245198273433",
+      "createdAt": {}
+    },
+    {
+      "name": "Screen Share Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.05675057580922893",
+      "createdAt": {}
+    },
+    {
+      "name": "Start Menu",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9797933810354229",
+      "createdAt": {}
+    },
+    {
+      "name": "Search Bar",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9672325867149818",
+      "createdAt": {}
+    },
+    {
+      "name": "Alt+Tab Task Switcher",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.41694300247027183",
+      "createdAt": {}
+    },
+    {
+      "name": "Snap Layouts",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.9957466590154135",
+      "createdAt": {}
+    },
+    {
+      "name": "Virtual Desktop Manager",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.7502187883285011",
+      "createdAt": {}
+    },
+    {
+      "name": "Taskbar",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.3047116328500422",
+      "createdAt": {}
+    },
+    {
+      "name": "System Tray",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.4606842975497518",
+      "createdAt": {}
+    },
+    {
+      "name": "Run Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "id": "17627505106460.03641524293275178",
+      "createdAt": {}
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "17627505106460.3911432142416372",
+      "name": "Copy/ Move files & folders",
+      "group": "Manage files & folders",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "1762332451663",
+          "1762350714791",
+          "1762352402869",
+          "1762350791494",
+          "17623304787470.283771098056223",
+          "17623304787470.9561747667893645",
+          "17623304787470.4510107999861379",
+          "17623304787470.9381990069765973"
+        ],
+        [
+          "17623304787470.21999121862463733",
+          "1762352110406",
+          "1762352717003",
+          "17623304787470.283771098056223"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6729233573935722",
+          "17627505106460.6261763800340369",
+          "17627505106460.3868800927604922",
+          "17627505106460.4928128477250717",
+          "17627505106460.5606805719143654",
+          "17627505106460.4917888250697845",
+          "17627505106460.3073222054247877",
+          "17627505106460.3689913573598047"
+        ],
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.18114246103815923",
+          "17627505106460.14941852310884018",
+          "17627505106460.5606805719143654"
+        ]
+      ]
+    },
+    {
+      "name": "Delete files & folders",
+      "id": "17627505106460.35163500507680534",
+      "group": "Manage files & folders",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "17623304787470.28796922688139037"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6937290746525375"
+        ]
+      ]
+    },
+    {
+      "name": "Zipping or compressing files & folders",
+      "id": "17627505106460.3747182347735929",
+      "group": "Manage files & folders",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "17623304787470.02810767199688835",
+          "1762343373320"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6277512756653373",
+          "17627505106460.23986377641138312"
+        ]
+      ]
+    },
+    {
+      "name": "Hiding files & folders",
+      "group": "Manage files & folders",
+      "id": "17627505106460.9215476429158227",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "1762332451663",
+          "1762343501127",
+          "1762350307138"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6729233573935722",
+          "17627505106460.930272042294778",
+          "17627505106460.8042933152667192"
+        ]
+      ]
+    },
+    {
+      "name": "Unzip/ decompress folders",
+      "group": "Manage files & folders",
+      "id": "17627505106460.2793484868092886",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "17623304787470.4783002966430442"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.8214344697477495"
+        ]
+      ]
+    },
+    {
+      "name": "Empty recycle bin",
+      "group": "Manage files & folders",
+      "id": "17627505106460.8235272759249233",
+      "paths": [
+        [
+          "1762348453605",
+          "17623304787470.28796922688139037"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.6804706405298933",
+          "17627505106460.6937290746525375"
+        ]
+      ]
+    },
+    {
+      "name": "Preview file",
+      "group": "Manage files & folders",
+      "id": "17627505106460.41312575180767286",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "1762343840869"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.20871113528760632"
+        ]
+      ]
+    },
+    {
+      "name": "Create shortcut",
+      "group": "Manage files & folders",
+      "id": "17627505106460.7622424923797154",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "1762332451663",
+          "1762350637066",
+          "1762350687715"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6729233573935722",
+          "17627505106460.9455556356600051",
+          "17627505106460.38527981810404544"
+        ]
+      ]
+    },
+    {
+      "name": "Rename file/ folder",
+      "group": "Manage files & folders",
+      "id": "17627505106460.5828380881948491",
+      "paths": [
+        [
+          "17623304787470.21999121862463733",
+          "1762332451663",
+          "1762351103485"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.6729233573935722",
+          "17627505106460.10828998912660359"
+        ]
+      ]
+    },
+    {
+      "name": "Search a given file or folder",
+      "group": "Manage files & folders",
+      "id": "17627505106460.5650698872031098",
+      "paths": [
+        [
+          "1762351213263",
+          "1762351235715",
+          "1762351250094",
+          "1762351260927",
+          "17623304787470.21999121862463733",
+          "1762343840869"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.2690004326720562",
+          "17627505106460.3536624234521665",
+          "17627505106460.04278076656744345",
+          "17627505106460.33619738998446835",
+          "17627505106460.20871113528760632"
+        ]
+      ]
+    },
+    {
+      "name": "Install Windows (OOBE)",
+      "id": "17627505106460.1681144454433171",
+      "group": "System Setup & Installation",
+      "paths": [
+        [
+          "17623803828491.001",
+          "17623803828491.002",
+          "17623803828491.003"
+        ],
+        [
+          "17623803828491.002",
+          "17623803828491.003"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.3975588234835701",
+          "17627505106460.8738696110447851",
+          "17627505106460.5407794937552387"
+        ],
+        [
+          "17627505106460.8738696110447851",
+          "17627505106460.5407794937552387"
+        ]
+      ]
+    },
+    {
+      "name": "Activate Windows",
+      "id": "17627505106460.5267180490614325",
+      "group": "System Setup & Installation",
+      "paths": [
+        [
+          "17623803828491.004",
+          "17623803828491.007"
+        ],
+        [
+          "17623803828491.005",
+          "17623803828491.004"
+        ],
+        [
+          "17623803828491.006"
+        ],
+        [
+          "17623803828491.005",
+          "17623803828491.004"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7698364932171466",
+          "17627505106460.6145355486404045"
+        ],
+        [
+          "17627505106460.2394798333592415",
+          "17627505106460.7698364932171466"
+        ],
+        [
+          "17627505106460.44454116075851113"
+        ]
+      ]
+    },
+    {
+      "name": "Restore backup",
+      "id": "17627505106460.5954971563435585",
+      "group": "System Setup & Installation",
+      "paths": [
+        [
+          "17623803828491.008",
+          "17623803828491.009"
+        ],
+        [
+          "17623803828491.007",
+          "17623803828491.009"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7977360639039872",
+          "17627505106460.8283473874414996"
+        ],
+        [
+          "17627505106460.6145355486404045",
+          "17627505106460.8283473874414996"
+        ]
+      ]
+    },
+    {
+      "name": "Connect to Microsoft Account",
+      "id": "17627505106460.3825126286977365",
+      "group": "Account Management",
+      "paths": [
+        [
+          "17623803828491.007"
+        ],
+        [
+          "17623803828491.005",
+          "17623803828491.007"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.007"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.6145355486404045"
+        ],
+        [
+          "17627505106460.2394798333592415",
+          "17627505106460.6145355486404045"
+        ],
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.6145355486404045"
+        ]
+      ]
+    },
+    {
+      "name": "Setup Windows Hello",
+      "id": "17627505106460.5297843804607306",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.010",
+          "17623803828491.011"
+        ],
+        [
+          "17623803828491.005",
+          "17623803828491.010",
+          "17623803828491.012"
+        ],
+        [
+          "17623803828491.023",
+          "17623803828491.010"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.36877087052782476",
+          "17627505106460.9876871661690692"
+        ],
+        [
+          "17627505106460.2394798333592415",
+          "17627505106460.36877087052782476",
+          "17627505106460.7920542249823215"
+        ],
+        [
+          "17627505106460.7459688068463297",
+          "17627505106460.36877087052782476"
+        ]
+      ]
+    },
+    {
+      "name": "Install apps from Windows Store",
+      "id": "17627505106460.5204829439999789",
+      "group": "App Management",
+      "paths": [
+        [
+          "17623803828491.063",
+          "17623803828491.013",
+          "17623803828491.014"
+        ],
+        [
+          "17623803828491.059",
+          "17623803828491.013",
+          "17623803828491.014"
+        ],
+        [
+          "17623803828491.064",
+          "17623803828491.013",
+          "17623803828491.014"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.2592706029583234",
+          "17627505106460.913993046329158"
+        ],
+        [
+          "17627505106460.044590691538438976",
+          "17627505106460.2592706029583234",
+          "17627505106460.913993046329158"
+        ],
+        [
+          "17627505106460.9672325867149818",
+          "17627505106460.2592706029583234",
+          "17627505106460.913993046329158"
+        ]
+      ]
+    },
+    {
+      "name": "Install apps from installer",
+      "id": "17627505106460.6022246594271257",
+      "group": "App Management",
+      "paths": [
+        [
+          "17623803828490.8147785911454833",
+          "17623803828490.8340179234753444"
+        ],
+        [
+          "17623803828491.029"
+        ],
+        [
+          "17623803828491.006"
+        ],
+        [
+          "17623803828491.059"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.33619738998446835"
+        ],
+        [
+          "17627505106460.9739155646778521"
+        ]
+      ]
+    },
+    {
+      "name": "Update/Install drivers",
+      "id": "17627505106460.7541161617718181",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.016"
+        ],
+        [
+          "17623803828491.015"
+        ],
+        [
+          "17623803828491.059"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.5469480937470305"
+        ]
+      ]
+    },
+    {
+      "name": "Transfer files from cloud",
+      "id": "17627505106460.8646625906622925",
+      "group": "Data Transfer",
+      "paths": [
+        [
+          "17623803828491.009"
+        ],
+        [
+          "17623803828491.059",
+          "17623803828490.8147785911454833"
+        ],
+        [
+          "17623803828491.008",
+          "17623803828491.009"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.8283473874414996"
+        ],
+        [
+          "17627505106460.044590691538438976",
+          "17627505106460.4416846132409372"
+        ]
+      ]
+    },
+    {
+      "name": "Transfer from physical drives",
+      "id": "17627505106460.3725476577092206",
+      "group": "Data Transfer",
+      "paths": [
+        [
+          "17623803828490.8147785911454833",
+          "17623803828490.6829907232717161",
+          "17623803828490.6848048112647019"
+        ],
+        [
+          "17623803828491.035"
+        ],
+        [
+          "17623803828491.030"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.6261763800340369",
+          "17627505106460.4928128477250717"
+        ]
+      ]
+    },
+    {
+      "name": "Partitioning a drive",
+      "id": "17627505106460.7458581016198941",
+      "group": "Storage Management",
+      "paths": [
+        [
+          "17623803828491.035"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.030"
+        ],
+        [
+          "17623803828491.030"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.04580966889035176"
+        ],
+        [
+          "17627505106460.04580966889035176"
+        ]
+      ]
+    },
+    {
+      "name": "Setup BitLocker",
+      "id": "17627505106460.5635895067404199",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.023",
+          "17623803828491.031"
+        ],
+        [
+          "17623803828491.031"
+        ],
+        [
+          "17623803828490.8147785911454833",
+          "17623803828491.031"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7459688068463297",
+          "17627505106460.3039703067482794"
+        ],
+        [
+          "17627505106460.3039703067482794"
+        ],
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.3039703067482794"
+        ]
+      ]
+    },
+    {
+      "name": "Format a drive",
+      "id": "17627505106460.039039272483063714",
+      "group": "Storage Management",
+      "paths": [
+        [
+          "17623803828490.8147785911454833",
+          "17623803828491.032"
+        ],
+        [
+          "17623803828491.035",
+          "17623803828491.032"
+        ],
+        [
+          "17623803828491.030",
+          "17623803828491.032"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.4275622568644246"
+        ],
+        [
+          "17627505106460.6324863396260363",
+          "17627505106460.4275622568644246"
+        ],
+        [
+          "17627505106460.04580966889035176",
+          "17627505106460.4275622568644246"
+        ]
+      ]
+    },
+    {
+      "name": "Add Bluetooth devices",
+      "id": "17627505106460.8193105794617201",
+      "group": "Device Management",
+      "paths": [
+        [
+          "17623803828491.017",
+          "17623803828491.018"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.018"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.024986608906031105",
+          "17627505106460.5617875893925612"
+        ],
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.5617875893925612"
+        ]
+      ]
+    },
+    {
+      "name": "Connect additional monitor",
+      "id": "17627505106460.16445898374100787",
+      "group": "Device Management",
+      "paths": [
+        [
+          "17623803828491.019"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.019"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.6500716432339475"
+        ]
+      ]
+    },
+    {
+      "name": "Connect to Wi-Fi",
+      "id": "17627505106460.9648663487947394",
+      "group": "Network Connectivity",
+      "paths": [
+        [
+          "17623803828491.069",
+          "17623803828491.021"
+        ],
+        [
+          "17623803828491.020",
+          "17623803828491.021"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.7431062212177326"
+        ],
+        [
+          "17627505106460.8227213598577158",
+          "17627505106460.7431062212177326"
+        ]
+      ]
+    },
+    {
+      "name": "Setup VPN",
+      "id": "17627505106460.4115999721939516",
+      "group": "Network Connectivity",
+      "paths": [
+        [
+          "17623803828491.020",
+          "17623803828491.022"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.022"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.8227213598577158",
+          "17627505106460.899735157823365"
+        ],
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.899735157823365"
+        ]
+      ]
+    },
+    {
+      "name": "Setup Narrator",
+      "id": "17627505106460.5583628493758934",
+      "group": "Accessibility",
+      "paths": [
+        [
+          "17623803828491.023",
+          "17623803828491.024"
+        ],
+        [
+          "17623803828491.024"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7459688068463297",
+          "17627505106460.06370070992187638"
+        ],
+        [
+          "17627505106460.06370070992187638"
+        ]
+      ]
+    },
+    {
+      "name": "Setup Magnifier",
+      "id": "17627505106460.9640351614892945",
+      "group": "Accessibility",
+      "paths": [
+        [
+          "17623803828491.025"
+        ],
+        [
+          "17623803828491.023",
+          "17623803828491.025"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.025"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.5705143495944361"
+        ],
+        [
+          "17627505106460.7459688068463297",
+          "17627505106460.5705143495944361"
+        ],
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.5705143495944361"
+        ]
+      ]
+    },
+    {
+      "name": "Change system theme",
+      "id": "17627505106460.8214615185000685",
+      "group": "Personalization",
+      "paths": [
+        [
+          "17623803828491.026",
+          "17623803828491.027"
+        ],
+        [
+          "17623803828491.029",
+          "17623803828491.026",
+          "17623803828491.027"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.2992571363571872",
+          "17627505106460.7062283057496785"
+        ],
+        [
+          "17627505106460.9739155646778521",
+          "17627505106460.2992571363571872",
+          "17627505106460.7062283057496785"
+        ]
+      ]
+    },
+    {
+      "name": "Change wallpaper",
+      "id": "17627505106460.7017580974610821",
+      "group": "Personalization",
+      "paths": [
+        [
+          "17623803828491.029",
+          "17623803828491.026",
+          "17623803828491.028"
+        ],
+        [
+          "17623803828491.026",
+          "17623803828491.028"
+        ],
+        [
+          "17623803828490.8340179234753444",
+          "17623803828491.028"
+        ],
+        [
+          "17623803828491.054",
+          "17623803828491.028"
+        ],
+        [
+          "17623803828491.013",
+          "17623803828491.028"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9739155646778521",
+          "17627505106460.2992571363571872",
+          "17627505106460.657047309161967"
+        ],
+        [
+          "17627505106460.2992571363571872",
+          "17627505106460.657047309161967"
+        ],
+        [
+          "17627505106460.33619738998446835",
+          "17627505106460.657047309161967"
+        ],
+        [
+          "17627505106460.32148110644409944",
+          "17627505106460.657047309161967"
+        ],
+        [
+          "17627505106460.2592706029583234",
+          "17627505106460.657047309161967"
+        ]
+      ]
+    },
+    {
+      "name": "Adjust display settings",
+      "id": "17627505106460.21642545915300138",
+      "group": "Display & Accessibility",
+      "paths": [
+        [
+          "17623803828491.029",
+          "17623803828491.019"
+        ],
+        [
+          "17623803828491.019"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9739155646778521",
+          "17627505106460.6500716432339475"
+        ],
+        [
+          "17627505106460.6500716432339475"
+        ]
+      ]
+    },
+    {
+      "name": "Adjust night light settings",
+      "id": "17627505106460.1316151197243488",
+      "group": "Display & Accessibility",
+      "paths": [
+        [
+          "17623803828491.019",
+          "17623803828491.048"
+        ],
+        [
+          "17623803828491.029",
+          "17623803828491.048"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.048"
+        ],
+        [
+          "17623803828491.064",
+          "17623803828491.048"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.6500716432339475",
+          "17627505106460.8788108303040755"
+        ],
+        [
+          "17627505106460.9739155646778521",
+          "17627505106460.8788108303040755"
+        ],
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.8788108303040755"
+        ],
+        [
+          "17627505106460.9672325867149818",
+          "17627505106460.8788108303040755"
+        ]
+      ]
+    },
+    {
+      "name": "Take screenshots",
+      "id": "17627505106460.8981102645569292",
+      "group": "Productivity Tools",
+      "paths": [
+        [
+          "17623803828491.051"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.051"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.6358680923455968"
+        ],
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.6358680923455968"
+        ]
+      ]
+    },
+    {
+      "name": "Create/edit documents",
+      "id": "17627505106460.6866794133408151",
+      "group": "Productivity Tools",
+      "paths": [
+        [
+          "17623803828491.052"
+        ],
+        [
+          "17623803828491.053"
+        ],
+        [
+          "17623803828491.013"
+        ],
+        [
+          "17623803828491.059"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9760583132607861"
+        ],
+        [
+          "17627505106460.3150786216108856"
+        ],
+        [
+          "17627505106460.2592706029583234"
+        ]
+      ]
+    },
+    {
+      "name": "Take quick notes",
+      "id": "17627505106460.0969036011633525",
+      "group": "Productivity Tools",
+      "paths": [
+        [
+          "17623803828491.057"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.92382088064878"
+        ]
+      ]
+    },
+    {
+      "name": "Use Microsoft Copilot",
+      "id": "17627505106460.2010695359158844",
+      "group": "AI & Assistance",
+      "paths": [
+        [
+          "17623803828491.058"
+        ],
+        [
+          "17623803828491.064",
+          "17623803828491.058"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.20305115160236353"
+        ],
+        [
+          "17627505106460.9672325867149818",
+          "17627505106460.20305115160236353"
+        ]
+      ]
+    },
+    {
+      "name": "Record audio/video",
+      "id": "17627505106460.8068541163703435",
+      "group": "Media Creation",
+      "paths": [
+        [
+          "17623803828491.056"
+        ],
+        [
+          "17623803828491.055"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.3603970262308107"
+        ],
+        [
+          "17627505106460.5425240686021854"
+        ]
+      ]
+    },
+    {
+      "name": "Edit images/photos",
+      "id": "17627505106460.917617689403799",
+      "group": "Media Creation",
+      "paths": [
+        [
+          "17623803828491.054"
+        ],
+        [
+          "17623803828491.053"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.32148110644409944"
+        ]
+      ]
+    },
+    {
+      "name": "Send/receive emails",
+      "id": "17627505106460.12797567238020535",
+      "group": "Communication",
+      "paths": [
+        [
+          "17623803828491.060"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.21658373618895843"
+        ]
+      ]
+    },
+    {
+      "name": "Audio/video calls",
+      "id": "17627505106460.2416185629355394",
+      "group": "Communication",
+      "paths": [
+        [
+          "17623803828491.061"
+        ],
+        [
+          "17623803828491.059"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4234245198273433"
+        ],
+        [
+          "17627505106460.044590691538438976"
+        ]
+      ]
+    },
+    {
+      "name": "Screen sharing",
+      "id": "17627505106460.6275374580872063",
+      "group": "Communication",
+      "paths": [
+        [
+          "17623803828491.061",
+          "17623803828491.062"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.4234245198273433",
+          "17627505106460.05675057580922893"
+        ]
+      ]
+    },
+    {
+      "name": "Launch apps",
+      "id": "17627505106460.7893385102191073",
+      "group": "Navigation & Multitasking",
+      "paths": [
+        [
+          "17623803828491.063"
+        ],
+        [
+          "17623803828491.064"
+        ],
+        [
+          "17623803828491.068"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9797933810354229"
+        ],
+        [
+          "17627505106460.9672325867149818"
+        ],
+        [
+          "17627505106460.3047116328500422"
+        ]
+      ]
+    },
+    {
+      "name": "Task switching",
+      "id": "17627505106460.1205225533030353",
+      "group": "Navigation & Multitasking",
+      "paths": [
+        [
+          "17623803828491.065"
+        ],
+        [
+          "17623803828491.068"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.41694300247027183"
+        ]
+      ]
+    },
+    {
+      "name": "Split screen/Snap layouts",
+      "id": "17627505106460.5756708716940484",
+      "group": "Navigation & Multitasking",
+      "paths": [
+        [
+          "17623803828491.066"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9957466590154135"
+        ]
+      ]
+    },
+    {
+      "name": "Virtual desktop management",
+      "id": "17627505106460.13067670769302597",
+      "group": "Navigation & Multitasking",
+      "paths": [
+        [
+          "17623803828491.067"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7502187883285011"
+        ]
+      ]
+    },
+    {
+      "name": "Uninstall programs",
+      "id": "17627505106460.21374255559497868",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.046",
+          "17623803828491.047"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.047"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.038752475124363084",
+          "17627505106460.40163050800241706"
+        ],
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.40163050800241706"
+        ]
+      ]
+    },
+    {
+      "name": "Disk cleanup",
+      "id": "17627505106460.8671285200164213",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.063",
+          "17623803828491.036"
+        ],
+        [
+          "17623803828491.035"
+        ],
+        [
+          "17623803828490.8147785911454833",
+          "17623803828491.036"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.3680104600458577"
+        ],
+        [
+          "17627505106460.6324863396260363"
+        ],
+        [
+          "17627505106460.4416846132409372",
+          "17627505106460.3680104600458577"
+        ]
+      ]
+    },
+    {
+      "name": "Install Windows updates",
+      "id": "17627505106460.6793783039906769",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.016"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.32974698468346864"
+        ]
+      ]
+    },
+    {
+      "name": "Manage startup apps",
+      "id": "17627505106460.9421542292232333",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.033",
+          "17623803828491.034"
+        ],
+        [
+          "17623803828491.046",
+          "17623803828491.034"
+        ],
+        [
+          "17623803828491.070"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.8316382115052259",
+          "17627505106460.5112713852149057"
+        ],
+        [
+          "17627505106460.038752475124363084",
+          "17627505106460.5112713852149057"
+        ],
+        [
+          "17627505106460.03641524293275178"
+        ]
+      ]
+    },
+    {
+      "name": "Create system backup",
+      "id": "17627505106460.9746301944174617",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.008"
+        ],
+        [
+          "17623803828491.041"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7977360639039872"
+        ],
+        [
+          "17627505106460.08809294370132059"
+        ]
+      ]
+    },
+    {
+      "name": "System recovery",
+      "id": "17627505106460.7389653574728731",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.035",
+          "17623803828491.040"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.040"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.6324863396260363",
+          "17627505106460.01188651858043821"
+        ],
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.01188651858043821"
+        ]
+      ]
+    },
+    {
+      "name": "Run antivirus scan",
+      "id": "17627505106460.8305342868849228",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.063",
+          "17623803828491.037",
+          "17623803828491.038"
+        ],
+        [
+          "17623803828491.037",
+          "17623803828491.038"
+        ],
+        [
+          "17623803828491.070",
+          "17623803828491.038"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.11396990853642675",
+          "17627505106460.38621939801607363"
+        ],
+        [
+          "17627505106460.11396990853642675",
+          "17627505106460.38621939801607363"
+        ],
+        [
+          "17627505106460.03641524293275178",
+          "17627505106460.38621939801607363"
+        ]
+      ]
+    },
+    {
+      "name": "Manage firewall",
+      "id": "17627505106460.6626486480569379",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.037",
+          "17623803828491.039"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.11396990853642675",
+          "17627505106460.2250660985877666"
+        ]
+      ]
+    },
+    {
+      "name": "Lock device",
+      "id": "17627505106460.5527572560821735",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.043"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.08350092216182192"
+        ]
+      ]
+    },
+    {
+      "name": "Switch user",
+      "id": "17627505106460.992288691058291",
+      "group": "Account Management",
+      "paths": [
+        [
+          "17623803828491.044"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.8127150863513434"
+        ]
+      ]
+    },
+    {
+      "name": "Change password",
+      "id": "17627505106460.6144057432217555",
+      "group": "Security & Authentication",
+      "paths": [
+        [
+          "17623803828491.005",
+          "17623803828491.045"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.2394798333592415",
+          "17627505106460.5440016156892082"
+        ]
+      ]
+    },
+    {
+      "name": "Power management",
+      "id": "17627505106460.3794956218507787",
+      "group": "System Control",
+      "paths": [
+        [
+          "17623803828491.042"
+        ],
+        [
+          "17623803828491.063",
+          "17623803828491.042"
+        ],
+        [
+          "17623803828491.069",
+          "17623803828491.042"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.5117512450189494"
+        ],
+        [
+          "17627505106460.9797933810354229",
+          "17627505106460.5117512450189494"
+        ],
+        [
+          "17627505106460.4606842975497518",
+          "17627505106460.5117512450189494"
+        ]
+      ]
+    },
+    {
+      "name": "End tasks in Task Manager",
+      "id": "17627505106460.11637984292700454",
+      "group": "System Maintenance",
+      "paths": [
+        [
+          "17623803828491.033"
+        ],
+        [
+          "17623803828491.068",
+          "17623803828491.033"
+        ],
+        [
+          "17623803828491.006"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.8316382115052259"
+        ],
+        [
+          "17627505106460.3047116328500422",
+          "17627505106460.8316382115052259"
+        ]
+      ]
+    },
+    {
+      "name": "Adjust sound settings",
+      "id": "17627505106460.5705108562859806",
+      "group": "Audio & Media",
+      "paths": [
+        [
+          "17623803828491.050"
+        ],
+        [
+          "17623803828491.017",
+          "17623803828491.050"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.7819569598236034"
+        ],
+        [
+          "17627505106460.024986608906031105",
+          "17627505106460.7819569598236034"
+        ]
+      ]
+    },
+    {
+      "name": "Setup time & language",
+      "id": "17627505106460.5401314522635503",
+      "group": "System Configuration",
+      "paths": [
+        [
+          "17623803828491.049"
+        ]
+      ],
+      "methods": [
+        [
+          "17627505106460.2519310444298558"
+        ]
+      ]
+    }
+  ]
+}

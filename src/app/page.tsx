@@ -123,22 +123,37 @@ export default function Home() {
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && activeGraphId) {
+    if (file) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const json = e.target?.result as string;
-          await importDataFromLocalStorage(json, activeGraphId);
-          setGraphs(getGraphs()); // Re-fetch all graphs to reflect the merge
-          toast({ title: "Success", description: "Data merged into the current graph." });
+          const importedData = JSON.parse(json);
+          
+          // Create a new graph from the imported data
+          const newGraphId = `import-${Date.now()}`;
+          const graphName = importedData.name || file.name.replace('.json', '').replace(/-scenariomap$/, '');
+          
+          const newGraphs = {
+            ...graphs,
+            [newGraphId]: {
+              name: graphName,
+              elements: importedData.elements || [],
+              scenarios: importedData.scenarios || [],
+            }
+          };
+          
+          saveGraphs(newGraphs);
+          setGraphs(newGraphs);
+          setOpenGraphIds(prev => [...prev, newGraphId]); // Add to open tabs
+          setActiveGraphId(newGraphId);
+          toast({ title: "Success", description: `Imported "${graphName}" as a new graph.` });
         } catch (error: any) {
           toast({ variant: "destructive", title: "Import Error", description: error.message });
         }
       };
       reader.readAsText(file);
       event.target.value = ''; // Reset file input
-    } else if (!activeGraphId) {
-        toast({ variant: "destructive", title: "Import Error", description: "No active graph to import into." });
     }
   };
 
@@ -171,6 +186,7 @@ export default function Home() {
     
     saveGraphs(newGraphs);
     setGraphs(newGraphs);
+    setOpenGraphIds(prev => [...prev, newGraphId]); // Add to open tabs
     setActiveGraphId(newGraphId);
     toast({ title: "Success", description: `Opened "${graphName}" from file` });
   };

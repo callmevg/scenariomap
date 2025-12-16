@@ -43,10 +43,9 @@ Scenarios are the edges/paths in the graph, representing user flows.
 - **Export**: Users can download the currently active graph as a `.json` file.
     - File format: `{graphName}-scenariomap.json`.
     - Content: `{ name, elements, scenarios }` (D3 coordinates stripped).
-- **Import**: Users can upload a `.json` file to merge into the current graph.
-    - **Duplicate Detection**: The import logic checks for existing elements by name (case-insensitive) to prevent duplicates.
-    - **ID Remapping**: Imported element IDs are remapped to existing IDs if names match, or new IDs are generated.
-    - **Scenario Merge**: Imported scenarios are added only if no scenario with the same name exists.
+- **Import**: Users can upload a `.json` file which opens as a **new tab**.
+    - The imported graph opens in a new tab (non-destructive to existing tabs).
+    - Graph name is derived from the imported file's `name` property or filename.
     - **Backward Compatibility**: Supports legacy formats (`paths`, `elementIds`, `flows`).
 
 ## 5. File Storage (Save/Open)

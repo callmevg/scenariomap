@@ -131,6 +131,91 @@ test.describe('File Storage - Save/Open', () => {
   });
 
   test.describe('File Operations', () => {
+    test('should rename file using double-click', async ({ page }) => {
+      const testFilename = 'Test_Rename_Original_' + Date.now();
+      const newFilename = 'Test_Rename_New_' + Date.now();
+      
+      // Save a file first
+      await page.getByRole('button', { name: /save/i }).first().click();
+      await page.getByLabel(/file name/i).fill(testFilename);
+      await page.getByRole('dialog').getByRole('button', { name: /^save$/i }).click();
+      await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5000 });
+      
+      // Wait for file to be saved
+      await page.waitForTimeout(1000);
+      
+      // Open file browser
+      await page.getByRole('button', { name: /open/i }).first().click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      
+      // Wait for files to load
+      await page.waitForTimeout(500);
+      
+      const dialog = page.getByRole('dialog');
+      
+      // Verify file is in the list
+      await expect(dialog.getByText(testFilename)).toBeVisible();
+      
+      // Double-click on filename to enter edit mode
+      await dialog.getByText(testFilename).dblclick();
+      
+      // An input should appear
+      const renameInput = dialog.locator('input[class*="h-6"]');
+      await expect(renameInput).toBeVisible();
+      
+      // Clear and type new filename
+      await renameInput.fill(newFilename);
+      await renameInput.press('Enter');
+      
+      // Wait for rename to complete
+      await page.waitForTimeout(500);
+      
+      // Old name should be gone, new name should appear
+      await expect(dialog.getByText(testFilename)).not.toBeVisible();
+      await expect(dialog.getByText(newFilename)).toBeVisible();
+    });
+
+    test('should rename file using rename button', async ({ page }) => {
+      const testFilename = 'Test_Rename_Btn_' + Date.now();
+      const newFilename = 'Test_Renamed_Btn_' + Date.now();
+      
+      // Save a file first
+      await page.getByRole('button', { name: /save/i }).first().click();
+      await page.getByLabel(/file name/i).fill(testFilename);
+      await page.getByRole('dialog').getByRole('button', { name: /^save$/i }).click();
+      await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5000 });
+      
+      // Wait for file to be saved
+      await page.waitForTimeout(1000);
+      
+      // Open file browser
+      await page.getByRole('button', { name: /open/i }).first().click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      
+      // Wait for files to load
+      await page.waitForTimeout(500);
+      
+      const dialog = page.getByRole('dialog');
+      
+      // Find file row and click rename button
+      const fileRow = dialog.locator('[class*="cursor-pointer"]').filter({ hasText: testFilename });
+      await fileRow.getByRole('button', { name: 'Rename file' }).click();
+      
+      // An input should appear
+      const renameInput = dialog.locator('input[class*="h-6"]');
+      await expect(renameInput).toBeVisible();
+      
+      // Clear and type new filename
+      await renameInput.fill(newFilename);
+      await renameInput.press('Enter');
+      
+      // Wait for rename to complete
+      await page.waitForTimeout(500);
+      
+      // New name should appear
+      await expect(dialog.getByText(newFilename)).toBeVisible();
+    });
+
     test('should delete file from list', async ({ page }) => {
       const testFilename = 'Test_Delete_File_' + Date.now();
       
@@ -159,9 +244,9 @@ test.describe('File Storage - Save/Open', () => {
       page.on('dialog', d => d.accept());
       
       // Find the delete button (trash icon) for this specific file
-      // The file list item structure has the filename text and a button
+      // The file list item structure has the filename text and buttons for rename and delete
       const fileRow = dialog.locator('[class*="cursor-pointer"]').filter({ hasText: testFilename });
-      await fileRow.getByRole('button').click();
+      await fileRow.getByRole('button', { name: 'Delete file' }).click();
       
       // Wait for deletion
       await page.waitForTimeout(500);

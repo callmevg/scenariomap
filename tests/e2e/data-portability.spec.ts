@@ -60,7 +60,7 @@ test.describe('Data Import/Export', () => {
       await expect(fileInput).toBeAttached();
     });
 
-    test('should import valid JSON file', async ({ page }) => {
+    test('should import valid JSON file as new tab', async ({ page }) => {
       // Create test data
       const testData = {
         name: "Imported Graph",
@@ -85,7 +85,11 @@ test.describe('Data Import/Export', () => {
       // Wait for import to complete
       await page.waitForTimeout(1000);
 
-      // Verify imported elements appear
+      // Verify new tab was created with imported graph name
+      const tabBar = page.locator('.flex.items-center.border.bg-background.rounded-lg');
+      await expect(tabBar.locator('span', { hasText: 'Imported Graph' })).toBeVisible();
+
+      // Verify imported elements appear in the new tab
       await expect(page.locator('.node-group title', { hasText: 'Imported Element 1' })).toBeAttached();
     });
   });

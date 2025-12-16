@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FolderOpen, Save, FileJson, Trash2, RefreshCw } from 'lucide-react';
+import { FolderOpen, Save, FileJson, Trash2, RefreshCw, Pencil } from 'lucide-react';
 import type { GraphData } from '@/lib/types';
 
 interface FileInfo {
@@ -47,6 +47,8 @@ export function FileModal({
     const [filename, setFilename] = useState(currentGraphName);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editingFile, setEditingFile] = useState<string | null>(null);
+    const [newFilename, setNewFilename] = useState('');
 
     // Load files when modal opens
     useEffect(() => {
@@ -55,6 +57,8 @@ export function FileModal({
             setFilename(currentGraphName);
             setSelectedFile(null);
             setError(null);
+            setEditingFile(null);
+            setNewFilename('');
         }
     }, [open, currentGraphName]);
 
@@ -163,6 +167,46 @@ export function FileModal({
         }
     };
 
+    const handleRename = async (oldFilename: string) => {
+        if (!newFilename.trim()) {
+            setEditingFile(null);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/files', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    oldFilename, 
+                    newFilename: newFilename.trim() 
+                }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Failed to rename file');
+
+            await loadFiles();
+            // Update selection if the renamed file was selected
+            if (selectedFile === oldFilename) {
+                setSelectedFile(result.filename);
+            }
+            setEditingFile(null);
+            setNewFilename('');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startEditing = (file: FileInfo) => {
+        setEditingFile(file.filename);
+        setNewFilename(file.name);
+    };
+
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleString();
     };
@@ -226,32 +270,77 @@ export function FileModal({
                                                 selectedFile === file.filename ? 'bg-muted' : ''
                                             }`}
                                             onClick={() => {
-                                                setSelectedFile(file.filename);
-                                                if (mode === 'save') {
-                                                    setFilename(file.name);
+                                                if (editingFile !== file.filename) {
+                                                    setSelectedFile(file.filename);
+                                                    if (mode === 'save') {
+                                                        setFilename(file.name);
+                                                    }
                                                 }
                                             }}
                                         >
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                                 <FileJson className="h-4 w-4 shrink-0 text-muted-foreground" />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{file.name}</p>
+                                                    {editingFile === file.filename ? (
+                                                        <Input
+                                                            value={newFilename}
+                                                            onChange={(e) => setNewFilename(e.target.value)}
+                                                            onBlur={() => handleRename(file.filename)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleRename(file.filename);
+                                                                } else if (e.key === 'Escape') {
+                                                                    setEditingFile(null);
+                                                                    setNewFilename('');
+                                                                }
+                                                            }}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            autoFocus
+                                                            className="h-6 text-sm py-0"
+                                                        />
+                                                    ) : (
+                                                        <p 
+                                                            className="text-sm font-medium truncate"
+                                                            onDoubleClick={(e) => {
+                                                                e.stopPropagation();
+                                                                startEditing(file);
+                                                            }}
+                                                            title="Double-click to rename"
+                                                        >
+                                                            {file.name}
+                                                        </p>
+                                                    )}
                                                     <p className="text-xs text-muted-foreground">
                                                         {formatDate(file.modifiedAt)} · {formatSize(file.size)}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 shrink-0"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(file.filename);
-                                                }}
-                                            >
-                                                <Trash2 className="h-3 w-3 text-destructive" />
-                                            </Button>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        startEditing(file);
+                                                    }}
+                                                    title="Rename file"
+                                                >
+                                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(file.filename);
+                                                    }}
+                                                    title="Delete file"
+                                                >
+                                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

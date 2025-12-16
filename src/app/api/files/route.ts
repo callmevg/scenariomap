@@ -129,3 +129,55 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+// PATCH - Rename a file
+export async function PATCH(request: NextRequest) {
+    try {
+        await ensureDataDir();
+
+        const body = await request.json();
+        const { oldFilename, newFilename } = body;
+
+        if (!oldFilename || !newFilename) {
+            return NextResponse.json({ error: 'Old and new filenames are required' }, { status: 400 });
+        }
+
+        // Sanitize new filename
+        const sanitizedNewFilename = newFilename.replace(/[^a-zA-Z0-9_-]/g, '_') + '.json';
+        const oldFilePath = path.join(DATA_DIR, oldFilename);
+        const newFilePath = path.join(DATA_DIR, sanitizedNewFilename);
+
+        // Security: ensure paths are within DATA_DIR
+        if (!oldFilePath.startsWith(DATA_DIR) || !newFilePath.startsWith(DATA_DIR)) {
+            return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+        }
+
+        // Check if old file exists
+        try {
+            await fs.access(oldFilePath);
+        } catch {
+            return NextResponse.json({ error: 'File not found' }, { status: 404 });
+        }
+
+        // Check if new filename already exists (and is different from old)
+        if (oldFilename !== sanitizedNewFilename) {
+            try {
+                await fs.access(newFilePath);
+                return NextResponse.json({ error: 'A file with that name already exists' }, { status: 409 });
+            } catch {
+                // File doesn't exist, we can proceed
+            }
+        }
+
+        await fs.rename(oldFilePath, newFilePath);
+
+        return NextResponse.json({ 
+            success: true, 
+            filename: sanitizedNewFilename,
+            message: `File renamed to ${sanitizedNewFilename}` 
+        });
+    } catch (error: any) {
+        console.error('File rename error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
