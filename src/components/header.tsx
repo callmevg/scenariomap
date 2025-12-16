@@ -2,17 +2,19 @@
 import React, { useRef } from 'react';
 import { Logo } from "@/components/icons";
 import { Button } from '@/components/ui/button';
-import { FileJson, Upload } from 'lucide-react';
+import { FileJson, Upload, Save, FolderOpen } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 
 interface HeaderProps {
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSave: () => void;
+  onOpen: () => void;
   disabled?: boolean;
   children?: React.ReactNode;
 }
 
-export function Header({ onExport, onImport, disabled, children }: HeaderProps) {
+export function Header({ onExport, onImport, onSave, onOpen, disabled, children }: HeaderProps) {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -26,6 +28,13 @@ export function Header({ onExport, onImport, disabled, children }: HeaderProps) 
           {children}
         </div>
         <div className="flex items-center space-x-2">
+            <Button onClick={onOpen} variant="outline" size="sm" disabled={disabled}>
+              <FolderOpen className="mr-2 h-4 w-4" /> Open
+            </Button>
+            <Button onClick={onSave} variant="outline" size="sm" disabled={disabled}>
+              <Save className="mr-2 h-4 w-4" /> Save
+            </Button>
+            <div className="w-px h-6 bg-border mx-1" />
             <Button onClick={onExport} variant="outline" size="sm" disabled={disabled}>
               <FileJson className="mr-2 h-4 w-4" /> Export
             </Button>

@@ -24,6 +24,7 @@ import { Header } from '@/components/header';
 import { Dashboard } from '@/components/dashboard';
 import ElementModal from '@/components/modals/element-modal';
 import ScenarioModal from '@/components/modals/scenario-modal';
+import { FileModal } from '@/components/modals/file-modal';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,6 +45,7 @@ import MetroMap from '@/components/metro-map';
 
 type ModalState<T> = { open: boolean; data?: T | null; mode?: 'add' | 'edit' | 'view' };
 type DeleteDialogState = { open: boolean; id?: string | null; type: 'scenario' | 'element' };
+type FileModalState = { open: boolean; mode: 'save' | 'open' };
 
 
 export default function Home() {
@@ -58,6 +60,7 @@ export default function Home() {
   const [elementModal, setElementModal] = useState<ModalState<UIElement>>({ open: false, mode: 'add' });
   const [scenarioModal, setScenarioModal] = useState<ModalState<UIScenario>>({ open: false, mode: 'add' });
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({ open: false, type: 'scenario' });
+  const [fileModal, setFileModal] = useState<FileModalState>({ open: false, mode: 'save' });
 
   useEffect(() => {
     setHasMounted(true);
@@ -134,6 +137,39 @@ export default function Home() {
     } else if (!activeGraphId) {
         toast({ variant: "destructive", title: "Import Error", description: "No active graph to import into." });
     }
+  };
+
+  // File save/open handlers
+  const handleOpenSaveModal = () => {
+    setFileModal({ open: true, mode: 'save' });
+  };
+
+  const handleOpenFileModal = () => {
+    setFileModal({ open: true, mode: 'open' });
+  };
+
+  const handleFileSave = (filename: string) => {
+    toast({ title: "Success", description: `Graph saved to ${filename}` });
+  };
+
+  const handleFileOpen = (data: GraphData, filename: string) => {
+    // Create a new graph from the file data
+    const newGraphId = `file-${Date.now()}`;
+    const graphName = filename.replace('.json', '');
+    
+    const newGraphs = {
+      ...graphs,
+      [newGraphId]: {
+        name: graphName,
+        elements: data.elements || [],
+        scenarios: data.scenarios || [],
+      }
+    };
+    
+    saveGraphs(newGraphs);
+    setGraphs(newGraphs);
+    setActiveGraphId(newGraphId);
+    toast({ title: "Success", description: `Opened "${graphName}" from file` });
   };
 
   const handleEditScenario = (scenario: UIScenario) => {
@@ -383,7 +419,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header onExport={handleExportData} onImport={handleImportData} disabled={!activeGraphId}>
+      <Header 
+        onExport={handleExportData} 
+        onImport={handleImportData} 
+        onSave={handleOpenSaveModal}
+        onOpen={handleOpenFileModal}
+        disabled={!activeGraphId}
+      >
         {hasMounted && (
             <TabBar
                 graphs={graphs}
@@ -510,6 +552,16 @@ export default function Home() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <FileModal
+        open={fileModal.open}
+        onOpenChange={(open) => setFileModal({ ...fileModal, open })}
+        mode={fileModal.mode}
+        currentGraphName={activeGraph?.name || 'Untitled'}
+        currentGraphData={activeGraph}
+        onFileOpen={handleFileOpen}
+        onFileSave={handleFileSave}
+      />
 
     </div>
   );
