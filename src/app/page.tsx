@@ -51,6 +51,7 @@ type FileModalState = { open: boolean; mode: 'save' | 'open' };
 export default function Home() {
   const [hasMounted, setHasMounted] = useState(false);
   const [graphs, setGraphs] = useState<Record<string, GraphData>>({});
+  const [openGraphIds, setOpenGraphIds] = useState<string[]>([]); // Track which graphs are open as tabs
   const [activeGraphId, setActiveGraphId] = useState<string | null>(null);
   const [hoveredScenarioId, setHoveredScenarioId] = useState<string | null>(null);
   const [hiddenScenarioIds, setHiddenScenarioIds] = useState<Set<string>>(new Set());
@@ -73,7 +74,9 @@ export default function Home() {
       toast({ title: "Welcome!", description: "We've added a sample graph to get you started." });
     }
     setGraphs(currentGraphs);
-    const firstGraphId = Object.keys(currentGraphs)[0];
+    const allGraphIds = Object.keys(currentGraphs);
+    setOpenGraphIds(allGraphIds); // Initially open all graphs as tabs
+    const firstGraphId = allGraphIds[0];
     setActiveGraphId(firstGraphId);
   }, [toast]);
 
@@ -341,14 +344,36 @@ export default function Home() {
     };
     saveGraphs(allGraphs);
     setGraphs(allGraphs);
+    setOpenGraphIds(prev => [...prev, newGraphId]); // Add to open tabs
     setActiveGraphId(newGraphId);
     setHiddenScenarioIds(new Set()); // Reset visibility for new tab
   };
   
+  // Close a tab without deleting the graph from storage
+  const handleCloseGraph = (graphId: string) => {
+    // Don't allow closing the last tab
+    if (openGraphIds.length <= 1) {
+      toast({ title: "Cannot close", description: "You must have at least one tab open.", variant: "destructive" });
+      return;
+    }
+    
+    // Remove from open tabs
+    setOpenGraphIds(prev => prev.filter(id => id !== graphId));
+    
+    // If this was the active tab, switch to another one
+    if (activeGraphId === graphId) {
+      const remainingIds = openGraphIds.filter(id => id !== graphId);
+      setActiveGraphId(remainingIds[0] || null);
+      setHiddenScenarioIds(new Set());
+    }
+  };
+
+  // Permanently delete a graph (keeping this for future use if needed)
   const handleDeleteGraph = (graphId: string) => {
     deleteGraph(graphId);
     const remainingGraphs = getGraphs();
     setGraphs(remainingGraphs);
+    setOpenGraphIds(prev => prev.filter(id => id !== graphId));
     if (activeGraphId === graphId) {
       const nextGraphId = Object.keys(remainingGraphs)[0] || null;
       setActiveGraphId(nextGraphId);
@@ -428,11 +453,11 @@ export default function Home() {
       >
         {hasMounted && (
             <TabBar
-                graphs={graphs}
+                graphs={Object.fromEntries(openGraphIds.filter(id => graphs[id]).map(id => [id, graphs[id]]))}
                 activeGraphId={activeGraphId}
                 onSelectTab={handleSelectTab}
                 onAddGraph={handleAddNewGraph}
-                onDeleteGraph={handleDeleteGraph}
+                onCloseGraph={handleCloseGraph}
                 onRenameGraph={handleRenameGraph}
             />
         )}

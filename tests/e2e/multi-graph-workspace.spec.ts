@@ -67,10 +67,10 @@ test.describe('Multi-Graph Workspace', () => {
     await expect(tabBar.locator('span', { hasText: 'My Custom Graph' })).toBeVisible();
   });
 
-  test('should delete a graph with confirmation', async ({ page }) => {
+  test('should close a graph tab without deleting data', async ({ page }) => {
     const tabBar = page.locator('.flex.items-center.border.bg-background.rounded-lg');
     
-    // Create second graph first (so we're not deleting the last one)
+    // Create second graph first (so we're not closing the last one)
     await tabBar.locator('button').last().click();
     await expect(tabBar.locator('span', { hasText: 'Untitled Graph' })).toBeVisible();
 
@@ -79,17 +79,17 @@ test.describe('Multi-Graph Workspace', () => {
     await sampleGraphTab.hover();
 
     // Click close button (X icon - it's inside the tab div)
+    // This should close immediately without confirmation since data is preserved
     await sampleGraphTab.locator('button').click();
 
-    // Confirm deletion in dialog
-    await expect(page.getByText(/are you absolutely sure/i)).toBeVisible();
-    await page.getByRole('button', { name: /continue/i }).click();
-
-    // Verify graph is deleted
+    // Verify tab is closed (no longer visible)
     await expect(tabBar.locator('span', { hasText: 'Sample Graph' })).not.toBeVisible();
+    
+    // The Untitled Graph tab should now be active
+    await expect(tabBar.locator('span', { hasText: 'Untitled Graph' })).toBeVisible();
   });
 
-  test('should prevent deleting the last graph', async ({ page }) => {
+  test('should prevent closing the last graph tab', async ({ page }) => {
     const tabBar = page.locator('.flex.items-center.border.bg-background.rounded-lg');
     
     // Hover over the only tab

@@ -1,0 +1,85 @@
+{
+  "name": "Sample Graph",
+  "elements": [
+    {
+      "id": "1",
+      "name": "Login Dialog",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-16T05:55:06.541Z"
+    },
+    {
+      "id": "2",
+      "name": "Dashboard",
+      "isBuggy": true,
+      "bugDetails": "Metrics not loading correctly.",
+      "mediaLink": "bug-placeholder",
+      "createdAt": "2025-12-16T05:55:06.541Z"
+    },
+    {
+      "id": "3",
+      "name": "Settings Page",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-16T05:55:06.541Z"
+    },
+    {
+      "id": "4",
+      "name": "User Profile",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-16T05:55:06.541Z"
+    },
+    {
+      "id": "5",
+      "name": "Forgot Password",
+      "isBuggy": false,
+      "bugDetails": "",
+      "mediaLink": "",
+      "createdAt": "2025-12-16T05:55:06.541Z"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "101",
+      "name": "User Login",
+      "methods": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "5",
+          "1"
+        ]
+      ],
+      "group": "Onboarding"
+    },
+    {
+      "id": "102",
+      "name": "Profile Update",
+      "methods": [
+        [
+          "2",
+          "3",
+          "4"
+        ]
+      ],
+      "group": "User Management"
+    },
+    {
+      "id": "103",
+      "name": "View Settings",
+      "methods": [
+        [
+          "2",
+          "3"
+        ]
+      ],
+      "group": "User Management"
+    }
+  ]
+}

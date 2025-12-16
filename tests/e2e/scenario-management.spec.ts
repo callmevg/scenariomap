@@ -82,25 +82,46 @@ test.describe('Scenario Management', () => {
   });
 
   test('should edit an existing scenario', async ({ page }) => {
-    // Look for Onboarding group (contains sample scenarios)
-    await expect(page.getByText('Onboarding')).toBeVisible({ timeout: 5000 });
-
-    // Find an edit button (Edit icon) near the scenario cards  
-    // The Edit button is in the CardHeader alongside eye icon
-    const editButtons = page.locator('button').filter({ has: page.locator('[class*="lucide-edit"], [class*="lucide-pencil"]').or(page.locator('svg')) });
-    
-    // Click the first edit button that's visible
-    const firstEditButton = editButtons.nth(2); // Skip the first few header buttons
-    await firstEditButton.click();
-    
-    // Wait for edit modal - if it opened
-    const dialog = page.getByRole('dialog');
-    if (await dialog.isVisible()) {
-      await expect(page.getByText('Edit Scenario')).toBeVisible({ timeout: 5000 });
-      
-      // Close the modal
+    // Close any open dialogs first
+    const existingDialog = page.getByRole('dialog');
+    if (await existingDialog.isVisible()) {
       await page.keyboard.press('Escape');
+      await expect(existingDialog).not.toBeVisible({ timeout: 3000 });
     }
+
+    // The Onboarding accordion may already be expanded from sample data
+    // Click on it to ensure it's expanded
+    const onboardingButton = page.getByRole('button', { name: 'Onboarding' });
+    await expect(onboardingButton).toBeVisible({ timeout: 5000 });
+    
+    // Check if expanded, if not expand it
+    const isExpanded = await onboardingButton.getAttribute('data-state');
+    if (isExpanded !== 'open') {
+      await onboardingButton.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Find the "User Login" scenario in the expanded accordion region
+    const onboardingRegion = page.getByRole('region', { name: 'Onboarding' });
+    await expect(onboardingRegion).toBeVisible({ timeout: 5000 });
+    
+    // Find the scenario text and its parent container
+    const userLoginText = onboardingRegion.getByText('User Login');
+    await expect(userLoginText).toBeVisible({ timeout: 5000 });
+    
+    // The edit button is the second button in the same row as the scenario name
+    // Navigate to the parent card/row and find the edit button (second button)
+    const editButton = onboardingRegion.locator('button').nth(1); // Second button after eye icon
+    await editButton.click();
+    
+    // Wait for edit modal
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Edit Scenario')).toBeVisible({ timeout: 5000 });
+      
+    // Close the modal
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible({ timeout: 3000 });
   });
 
   test('should toggle scenario visibility', async ({ page }) => {

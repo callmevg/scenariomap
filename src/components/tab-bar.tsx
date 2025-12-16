@@ -4,19 +4,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, Edit, Check } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GraphData } from '@/lib/types';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Separator } from './ui/separator';
 
 interface TabBarProps {
@@ -24,7 +14,7 @@ interface TabBarProps {
   activeGraphId: string | null;
   onSelectTab: (graphId: string) => void;
   onAddGraph: () => void;
-  onDeleteGraph: (graphId: string) => void;
+  onCloseGraph: (graphId: string) => void;
   onRenameGraph: (graphId: string, newName: string) => void;
 }
 
@@ -33,12 +23,11 @@ export function TabBar({
   activeGraphId,
   onSelectTab,
   onAddGraph,
-  onDeleteGraph,
+  onCloseGraph,
   onRenameGraph,
 }: TabBarProps) {
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const graphIds = Object.keys(graphs);
@@ -72,19 +61,13 @@ export function TabBar({
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, graphId: string) => {
+  const handleCloseClick = (e: React.MouseEvent, graphId: string) => {
     e.stopPropagation(); // Prevent tab selection
     if (graphIds.length > 1) {
-        setDeleteConfirmation(graphId);
+        // Close immediately without confirmation - data is still saved
+        onCloseGraph(graphId);
     } else {
-        alert("You cannot delete the last graph.");
-    }
-  };
-
-  const confirmDelete = () => {
-    if (deleteConfirmation) {
-        onDeleteGraph(deleteConfirmation);
-        setDeleteConfirmation(null);
+        alert("You cannot close the last tab.");
     }
   };
 
@@ -123,7 +106,8 @@ export function TabBar({
                     variant="ghost"
                     size="icon"
                     className={cn("h-5 w-5 ml-2 opacity-0 group-hover:opacity-100 flex-shrink-0", activeGraphId === graphId && "hover:bg-primary/80")}
-                    onClick={(e) => handleDeleteClick(e, graphId)}
+                    onClick={(e) => handleCloseClick(e, graphId)}
+                    title="Close tab (data is preserved)"
                 >
                     <X className="h-3 w-3" />
                 </Button>
@@ -135,21 +119,6 @@ export function TabBar({
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-
-       <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the graph and all its content.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmation(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
