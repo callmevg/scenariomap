@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,63 @@ import { Checkbox } from './ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2 } from 'lucide-react';
 import { Textarea } from './ui/textarea';
+
+// Resizable Table Header Component
+interface ResizableHeaderProps {
+    children: React.ReactNode;
+    width: number;
+    onResize: (width: number) => void;
+    className?: string;
+    minWidth?: number;
+}
+
+function ResizableHeader({ children, width, onResize, className = '', minWidth = 50 }: ResizableHeaderProps) {
+    const headerRef = useRef<HTMLTableCellElement>(null);
+    const isResizing = useRef(false);
+    const startX = useRef(0);
+    const startWidth = useRef(0);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isResizing.current = true;
+        startX.current = e.clientX;
+        startWidth.current = width;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing.current) return;
+            const diff = e.clientX - startX.current;
+            const newWidth = Math.max(minWidth, startWidth.current + diff);
+            onResize(newWidth);
+        };
+
+        const handleMouseUp = () => {
+            isResizing.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [width, onResize, minWidth]);
+
+    return (
+        <TableHead 
+            ref={headerRef} 
+            className={`relative ${className}`} 
+            style={{ width: `${width}px`, minWidth: `${minWidth}px` }}
+        >
+            {children}
+            <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/50 active:bg-primary"
+                onMouseDown={handleMouseDown}
+            />
+        </TableHead>
+    );
+}
 
 interface TableViewProps {
     elements: UIElement[];
@@ -23,6 +80,22 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
     const { toast } = useToast();
     const [editableElements, setEditableElements] = useState<UIElement[]>([]);
     const [editableScenarios, setEditableScenarios] = useState<UIScenario[]>([]);
+    
+    // Column widths for Elements table
+    const [elementColWidths, setElementColWidths] = useState({
+        name: 200,
+        isBuggy: 80,
+        bugDetails: 250,
+        actions: 70
+    });
+    
+    // Column widths for Scenarios table
+    const [scenarioColWidths, setScenarioColWidths] = useState({
+        name: 180,
+        group: 120,
+        methods: 300,
+        actions: 70
+    });
 
     useEffect(() => {
         setEditableElements(elements.map(e => ({...e})));
@@ -116,49 +189,74 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
 
 
     return (
-        <div className="space-y-4">
-            <Card>
-                <CardHeader className="pb-4">
-                    <CardTitle>Elements</CardTitle>
-                    <CardDescription>View and edit your UI elements directly in the table.</CardDescription>
+        <div className="space-y-2">
+            <Card className="shadow-none">
+                <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-sm">Elements</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="rounded-md border">
-                        <Table>
+                    <div className="border-t overflow-x-auto">
+                        <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead className="w-[100px]">Is Buggy?</TableHead>
-                                    <TableHead>Bug Details</TableHead>
-                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                    <ResizableHeader
+                                        width={elementColWidths.name}
+                                        onResize={(w) => setElementColWidths(prev => ({ ...prev, name: w }))}
+                                    >
+                                        Name
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={elementColWidths.isBuggy}
+                                        onResize={(w) => setElementColWidths(prev => ({ ...prev, isBuggy: w }))}
+                                        minWidth={60}
+                                    >
+                                        Is Buggy?
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={elementColWidths.bugDetails}
+                                        onResize={(w) => setElementColWidths(prev => ({ ...prev, bugDetails: w }))}
+                                    >
+                                        Bug Details
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={elementColWidths.actions}
+                                        onResize={(w) => setElementColWidths(prev => ({ ...prev, actions: w }))}
+                                        className="text-right"
+                                        minWidth={50}
+                                    >
+                                        Actions
+                                    </ResizableHeader>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {editableElements.map(el => (
-                                    <TableRow key={el.id}>
-                                        <TableCell className="p-2">
+                                    <TableRow key={el.id} className="h-8">
+                                        <TableCell style={{ width: elementColWidths.name }}>
                                             <Input
                                                 value={el.name}
                                                 onChange={(e) => handleElementChange(el.id, 'name', e.target.value)}
-                                                className="h-8"
+                                                className="h-6 text-xs px-1.5 border-0 bg-transparent focus-visible:bg-background focus-visible:border"
                                             />
                                         </TableCell>
-                                        <TableCell className="text-center p-2">
-                                            <Checkbox
-                                                checked={el.isBuggy}
-                                                onCheckedChange={(checked) => handleElementChange(el.id, 'isBuggy', !!checked)}
-                                            />
+                                        <TableCell style={{ width: elementColWidths.isBuggy }}>
+                                            <div className="flex items-center justify-center h-full">
+                                                <Checkbox
+                                                    checked={el.isBuggy}
+                                                    onCheckedChange={(checked) => handleElementChange(el.id, 'isBuggy', !!checked)}
+                                                    className="h-3.5 w-3.5"
+                                                />
+                                            </div>
                                         </TableCell>
-                                        <TableCell className="p-2">
+                                        <TableCell style={{ width: elementColWidths.bugDetails }}>
                                             <Input
                                                 value={el.bugDetails || ''}
                                                 onChange={(e) => handleElementChange(el.id, 'bugDetails', e.target.value)}
-                                                className="h-8"
+                                                className="h-6 text-xs px-1.5 border-0 bg-transparent focus-visible:bg-background focus-visible:border"
                                             />
                                         </TableCell>
-                                        <TableCell className="p-2 text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteElement(el.id)}>
-                                                <Trash2 className="h-4 w-4" />
+                                        <TableCell className="text-right" style={{ width: elementColWidths.actions }}>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onDeleteElement(el.id)}>
+                                                <Trash2 className="h-3 w-3" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -167,60 +265,81 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
                         </Table>
                     </div>
                 </CardContent>
-                <CardFooter className="flex justify-between pt-4">
-                     <Button onClick={handleAddElement} variant="outline">
-                        <Plus className="mr-2 h-4 w-4" /> Add Element
+                <CardFooter className="flex justify-between py-1.5 px-3">
+                     <Button onClick={handleAddElement} variant="outline" size="sm" className="h-6 text-xs">
+                        <Plus className="mr-1 h-3 w-3" /> Add
                     </Button>
-                    <Button onClick={() => handleSaveChanges('elements')}>Save Element Changes</Button>
+                    <Button onClick={() => handleSaveChanges('elements')} size="sm" className="h-6 text-xs">Save Changes</Button>
                 </CardFooter>
             </Card>
 
-            <Card>
-                <CardHeader className="pb-4">
-                    <CardTitle>Scenarios</CardTitle>
-                        <CardDescription>
-                        View and edit your user scenarios. Use comma-separated names for elements within a method, and semicolon-separated for different methods.
+            <Card className="shadow-none">
+                <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-sm">Scenarios</CardTitle>
+                    <CardDescription className="text-xs">
+                        Comma-separated elements per method, semicolon-separated methods.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="rounded-md border">
-                            <Table>
+                    <div className="border-t overflow-x-auto">
+                        <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Group</TableHead>
-                                    <TableHead>Methods (e.g. A, B, C; X, B)</TableHead>
-                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                    <ResizableHeader
+                                        width={scenarioColWidths.name}
+                                        onResize={(w) => setScenarioColWidths(prev => ({ ...prev, name: w }))}
+                                    >
+                                        Name
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={scenarioColWidths.group}
+                                        onResize={(w) => setScenarioColWidths(prev => ({ ...prev, group: w }))}
+                                    >
+                                        Group
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={scenarioColWidths.methods}
+                                        onResize={(w) => setScenarioColWidths(prev => ({ ...prev, methods: w }))}
+                                    >
+                                        Methods (e.g. A, B, C; X, B)
+                                    </ResizableHeader>
+                                    <ResizableHeader
+                                        width={scenarioColWidths.actions}
+                                        onResize={(w) => setScenarioColWidths(prev => ({ ...prev, actions: w }))}
+                                        className="text-right"
+                                        minWidth={50}
+                                    >
+                                        Actions
+                                    </ResizableHeader>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {editableScenarios.map(scenario => (
-                                    <TableRow key={scenario.id}>
-                                        <TableCell className="p-2">
+                                    <TableRow key={scenario.id} className="h-8">
+                                        <TableCell style={{ width: scenarioColWidths.name }}>
                                             <Input
                                                 value={scenario.name}
                                                 onChange={(e) => handleScenarioChange(scenario.id, 'name', e.target.value)}
-                                                className="h-8"
+                                                className="h-6 text-xs px-1.5 border-0 bg-transparent focus-visible:bg-background focus-visible:border"
                                             />
                                         </TableCell>
-                                        <TableCell className="p-2">
+                                        <TableCell style={{ width: scenarioColWidths.group }}>
                                             <Input
                                                 value={scenario.group || ''}
                                                 onChange={(e) => handleScenarioChange(scenario.id, 'group', e.target.value)}
-                                                className="h-8"
+                                                className="h-6 text-xs px-1.5 border-0 bg-transparent focus-visible:bg-background focus-visible:border"
                                             />
                                         </TableCell>
-                                        <TableCell className="p-2">
-                                            <Textarea
+                                        <TableCell style={{ width: scenarioColWidths.methods }}>
+                                            <Input
                                                 value={scenario.methods.map(method => method.map(id => elements.find(el => el.id === id)?.name || id).join(', ')).join('; ')}
                                                 onChange={(e) => handleScenarioMethodsChange(scenario.id, e.target.value)}
-                                                className="h-8"
-                                                rows={1}
+                                                className="h-6 text-xs px-1.5 border-0 bg-transparent focus-visible:bg-background focus-visible:border"
                                             />
                                         </TableCell>
-                                        <TableCell className="p-2 text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDeleteScenario(scenario.id)}>
-                                                <Trash2 className="h-4 w-4" />
+                                        <TableCell className="text-right" style={{ width: scenarioColWidths.actions }}>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onDeleteScenario(scenario.id)}>
+                                                <Trash2 className="h-3 w-3" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -229,11 +348,11 @@ export function TableView({ elements, scenarios, onBulkUpdate, onDeleteElement, 
                         </Table>
                     </div>
                 </CardContent>
-                 <CardFooter className="flex justify-between pt-4">
-                    <Button onClick={handleAddScenario} variant="outline">
-                        <Plus className="mr-2 h-4 w-4" /> Add Scenario
+                 <CardFooter className="flex justify-between py-1.5 px-3">
+                    <Button onClick={handleAddScenario} variant="outline" size="sm" className="h-6 text-xs">
+                        <Plus className="mr-1 h-3 w-3" /> Add
                     </Button>
-                    <Button onClick={() => handleSaveChanges('scenarios')}>Save Scenario Changes</Button>
+                    <Button onClick={() => handleSaveChanges('scenarios')} size="sm" className="h-6 text-xs">Save Changes</Button>
                 </CardFooter>
             </Card>
         </div>

@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Next.js development overlay */
+nextjs-portal {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --background: 220 17% 97%; /* #F9FAFB */
